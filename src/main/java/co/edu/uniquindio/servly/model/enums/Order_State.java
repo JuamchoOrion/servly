@@ -1,4 +1,4 @@
 package co.edu.uniquindio.servly.model.enums;
 
-public enum Measure_Unit {
+public enum Order_State {
 }
