@@ -1,32 +1,32 @@
 package co.edu.uniquindio.servly.model.entity;
+
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
 
-import java.util.List;
-
 @Entity
-@Table(name = "recipe")
+@Table(name = "itema_detail")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Recipe {
+public class ItemDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String name;
-
-    @Column
     private Integer quantity;
 
-    @Column(length = 500)
-    private String description;
+    @Column(length = 255)
+    private String annotation;
 
-    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ItemDetail> itemDetailList;
+    @Column(nullable = false)
+    private Boolean isOptional;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id", nullable = false)
+    private Item item;
 }

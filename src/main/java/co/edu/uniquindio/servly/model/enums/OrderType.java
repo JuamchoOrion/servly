@@ -1,4 +1,5 @@
 package co.edu.uniquindio.servly.model.enums;
-
-public enum Order_State {
+public enum OrderType {
+    TABLE,
+    DELIVERY
 }
