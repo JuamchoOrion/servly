@@ -5,5 +5,6 @@ public enum Role {
     WAITER,
     CASHIER,
     KITCHEN,
-    STOREKEEPER
+    STOREKEEPER,
+    CLIENT
 }
