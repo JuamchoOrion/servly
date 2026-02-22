@@ -19,4 +19,7 @@ public class DeliverySource extends OrderSource {
 
     @Column(nullable = false)
     private String clientName;
+
+    @Column(nullable = false)
+    private Integer deliveryTime;
 }
