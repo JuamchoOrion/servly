@@ -1,6 +1,5 @@
 package co.edu.uniquindio.servly.model.entity;
 
-import co.edu.uniquindio.servly.model.enums.OrderState;
 import co.edu.uniquindio.servly.model.enums.OrderType;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
@@ -28,10 +27,6 @@ public class Order {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OrderState state;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
