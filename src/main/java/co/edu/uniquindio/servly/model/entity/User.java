@@ -14,21 +14,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Entidad principal de usuario del sistema Servly.
- *
- * Implementa UserDetails para integrarse directamente con Spring Security.
- *
- * Notas importantes:
- *  - password es null para usuarios registrados via OAuth2 (Google)
- *  - provider diferencia cuentas locales de cuentas OAuth2
- *  - twoFactorEnabled activa el flujo de verificación en 2 pasos
- *  - El rol CLIENTE no se usa en esta entidad; los clientes del restaurante
- *    operan con sesiones anónimas de mesa (TableSession)
- */
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,18 +30,24 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false, length = 150)
     private String email;
 
-    // Null para usuarios OAuth2
+    // Null si el usuario es OAuth2
     @Column(length = 255)
     private String password;
 
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(nullable = false, length = 100)
+    private String lastName;
+
+    @Column(length = 255)
+    private String address;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
 
-    // ── OAuth2 ───────────────────────────────────────────────────────────────
+    // ── OAuth2 ─────────────────────────
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -62,13 +57,13 @@ public class User implements UserDetails {
     @Column(length = 255)
     private String providerId;
 
-    // ── 2FA ──────────────────────────────────────────────────────────────────
+    // ── 2FA ────────────────────────────
 
     @Column(nullable = false)
     @Builder.Default
     private boolean twoFactorEnabled = false;
 
-    // ── Estado ───────────────────────────────────────────────────────────────
+    // ── Estado de cuenta ───────────────
 
     @Column(nullable = false)
     @Builder.Default
@@ -86,7 +81,7 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean credentialsNonExpired = true;
 
-    // ── Auditoría ─────────────────────────────────────────────────────────────
+    // ── Auditoría ──────────────────────
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -95,7 +90,7 @@ public class User implements UserDetails {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // ── UserDetails ──────────────────────────────────────────────────────────
+    // ── Spring Security ────────────────
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

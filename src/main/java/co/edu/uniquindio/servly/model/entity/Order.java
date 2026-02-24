@@ -1,6 +1,5 @@
 package co.edu.uniquindio.servly.model.entity;
 
-import co.edu.uniquindio.servly.model.enums.OrderState;
 import co.edu.uniquindio.servly.model.enums.OrderType;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
@@ -18,7 +17,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Order {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,16 +29,12 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderState state;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private OrderType orderType;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Order_detail> orderDetailList;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "source_id", nullable = false)
+    private OrderSource source;
 }
