@@ -58,6 +58,25 @@ public class AuthController {
         return authService.refreshToken(request);
     }
 
+    /**
+     * Endpoint para cambiar la contraseña en el primer login.
+     * Solo accesible cuando mustChangePassword = true.
+     * 
+     * El usuario debe estar autenticado (haber pasado por login + 2FA)
+     * pero con el flag mustChangePassword activo.
+     */
+    @PostMapping("/force-password-change")
+    public ResponseEntity<AuthResponse> forcePasswordChange(
+            @Valid @RequestBody ForcePasswordChangeRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        AuthResponse response = authService.forcePasswordChange(
+            request, 
+            userDetails.getUsername()
+        );
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {

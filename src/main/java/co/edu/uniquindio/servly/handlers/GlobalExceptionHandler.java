@@ -1,7 +1,7 @@
 package co.edu.uniquindio.servly.handlers;
 
 import co.edu.uniquindio.servly.DTO.MessageResponse;
-import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.exception.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,11 +26,14 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // ── Excepciones de Autenticación ──────────────────────────────────────────
+
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<MessageResponse> handleAuthException(
             AuthException ex, HttpServletRequest request) {
         log.warn("AuthException en {}: {}", request.getRequestURI(), ex.getMessage());
-        return ResponseEntity.badRequest().body(new MessageResponse(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new MessageResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -48,8 +51,68 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LockedException.class)
     public ResponseEntity<MessageResponse> handleLocked() {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new MessageResponse("La cuenta está bloqueada"));
+                .body(new MessageResponse("La cuenta está bloqueada temporalmente"));
     }
+
+    @ExceptionHandler(AccountDisabledException.class)
+    public ResponseEntity<MessageResponse> handleAccountDisabled(
+            AccountDisabledException ex, HttpServletRequest request) {
+        log.warn("AccountDisabledException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    // ── Excepciones Personalizadas ────────────────────────────────────────────
+
+    @ExceptionHandler(MustChangePasswordException.class)
+    public ResponseEntity<MessageResponse> handleMustChangePassword(
+            MustChangePasswordException ex, HttpServletRequest request) {
+        log.warn("MustChangePasswordException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(TwoFactorRequiredException.class)
+    public ResponseEntity<MessageResponse> handleTwoFactorRequired(
+            TwoFactorRequiredException ex, HttpServletRequest request) {
+        log.warn("TwoFactorRequiredException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCodeException.class)
+    public ResponseEntity<MessageResponse> handleInvalidCode(
+            InvalidCodeException ex, HttpServletRequest request) {
+        log.warn("InvalidCodeException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(WeakPasswordException.class)
+    public ResponseEntity<MessageResponse> handleWeakPassword(
+            WeakPasswordException ex, HttpServletRequest request) {
+        log.warn("WeakPasswordException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(SamePasswordException.class)
+    public ResponseEntity<MessageResponse> handleSamePassword(
+            SamePasswordException ex, HttpServletRequest request) {
+        log.warn("SamePasswordException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(GoogleOAuth2BlockedException.class)
+    public ResponseEntity<MessageResponse> handleGoogleOAuth2Blocked(
+            GoogleOAuth2BlockedException ex, HttpServletRequest request) {
+        log.warn("GoogleOAuth2BlockedException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    // ── Validaciones ──────────────────────────────────────────────────────────
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationErrors(
@@ -62,6 +125,8 @@ public class GlobalExceptionHandler {
         });
         return ResponseEntity.badRequest().body(errors);
     }
+
+    // ── Errores Genéricos ─────────────────────────────────────────────────────
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MessageResponse> handleGenericException(

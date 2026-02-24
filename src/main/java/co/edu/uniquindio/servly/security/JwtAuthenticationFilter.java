@@ -1,5 +1,8 @@
 package co.edu.uniquindio.servly.security;
 
+import co.edu.uniquindio.servly.exception.AccountDisabledException;
+import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.model.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,6 +60,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
+            // Validaciones adicionales si es una instancia de User
+            if (userDetails instanceof User user) {
+                validateUserState(user);
+            }
+
             if (jwtTokenProvider.isTokenValid(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
@@ -68,5 +76,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Valida el estado de la cuenta del usuario.
+     * Lanza excepciones apropiadas según el estado.
+     */
+    private void validateUserState(User user) {
+        if (!user.isEnabled()) {
+            log.warn("Intento de acceso con cuenta deshabilitada: {}", user.getEmail());
+            throw new AccountDisabledException(
+                "La cuenta está deshabilitada. Contacte al administrador.");
+        }
+
+        if (!user.isAccountNonLocked()) {
+            log.warn("Intento de acceso con cuenta bloqueada: {}", user.getEmail());
+            throw new AccountDisabledException(
+                "La cuenta está bloqueada temporalmente. Intente más tarde.");
+        }
+
+        if (!user.isCredentialsNonExpired()) {
+            log.warn("Intento de acceso con contraseña expirada: {}", user.getEmail());
+            throw new AuthException(
+                "Su contraseña ha expirado. Solicite un restablecimiento.");
+        }
+
+        log.debug("Usuario {} tiene estado válido", user.getEmail());
     }
 }

@@ -26,4 +26,17 @@ public class AuthResponse {
     private String name;
     private String email;
     private Role   role;
+    
+    /**
+     * Indica si el usuario debe cambiar su contraseña antes de continuar.
+     * Si es true, el frontend debe redirigir a la vista de cambio de contraseña.
+     */
+    @Builder.Default
+    private boolean mustChangePassword = false;
+    
+    /**
+     * Indica si el usuario ya completó su primer login.
+     */
+    @Builder.Default
+    private boolean firstLoginCompleted = false;
 }

@@ -43,14 +43,98 @@ public class EmailService {
                 buildPasswordResetBody(userName, code));
     }
 
-    // ── Bienvenida al nuevo usuario ───────────────────────────────────────────
+    // ── Bienvenida con credenciales temporales (Unificado) ───────────────────
 
+    /**
+     * Envía email de bienvenida con credenciales temporales.
+     * Usado cuando un ADMIN crea un usuario (empleado o admin).
+     * Incluye:
+     *  - Credenciales de acceso
+     *  - Instrucciones de primer login
+     *  - Aviso de cambio de contraseña obligatorio
+     *  - Información de 2FA obligatorio
+     */
     @Async
-    public void sendWelcomeEmail(String toEmail, String userName,
-                                 String tempPassword, String role) {
+    public void sendWelcomeEmailWithTempCredentials(String toEmail, String userName,
+                                                     String tempPassword, String role,
+                                                     boolean mustChangePassword,
+                                                     boolean twoFactorEnabled) {
         sendHtmlEmail(toEmail,
                 "Servly – Tu cuenta ha sido creada",
-                buildWelcomeBody(userName, toEmail, tempPassword, role));
+                buildWelcomeWithTempCredentialsBody(userName, toEmail, tempPassword, role,
+                        mustChangePassword, twoFactorEnabled));
+    }
+
+    private String buildWelcomeWithTempCredentialsBody(String userName, String email,
+                                                        String tempPassword, String role,
+                                                        boolean mustChangePassword,
+                                                        boolean twoFactorEnabled) {
+        String roleName = switch (role) {
+            case "ADMIN"       -> "Administrador";
+            case "CAJERO"      -> "Cajero";
+            case "MESERO"      -> "Mesero";
+            case "COCINA"      -> "Cocina";
+            case "STOREKEEPER" -> "Bodeguero";
+            default            -> role;
+        };
+
+        StringBuilder alerts = new StringBuilder();
+
+        // Alerta de cambio de contraseña
+        if (mustChangePassword) {
+            alerts.append("""
+                <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:16px;border-radius:4px;margin:24px 0;">
+                  <h3 style="margin:0 0 8px 0;color:#856404;font-size:15px;">⚠️ Importante: Primer inicio de sesión</h3>
+                  <ol style="margin:0;padding-left:20px;color:#856404;font-size:13px;line-height:1.6;">
+                    <li>Inicia sesión con tu correo y contraseña temporal</li>
+                    <li>Ingresa el código de verificación 2FA que recibirás en este correo</li>
+                    <li><strong>Cambia tu contraseña</strong> por una permanente (obligatorio)</li>
+                  </ol>
+                </div>
+                """);
+        }
+
+        // Alerta de 2FA
+        if (twoFactorEnabled) {
+            alerts.append("""
+                <div style="background:#d4edda;border-left:4px solid #28a745;padding:12px 16px;border-radius:4px;margin-bottom:24px;">
+                  <p style="margin:0;color:#155724;font-size:13px;">
+                    ✅ <strong>2FA habilitado:</strong> Por seguridad, recibirás un código de verificación en tu correo cada vez que inicies sesión.
+                  </p>
+                </div>
+                """);
+        }
+
+        return """
+            <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+            <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+              <div style="max-width:500px;margin:auto;background:white;border-radius:8px;padding:32px;">
+                <h2 style="color:#2c3e50;">¡Bienvenido/a a Servly, %s! 🎉</h2>
+                <p style="color:#555;">Has sido registrado como <strong>%s</strong> en <strong>Servly</strong>.</p>
+                <p style="color:#555;">Tus credenciales de acceso son:</p>
+                
+                <table style="width:100%%;margin:24px 0;border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:10px 12px;background:#f8f9fa;font-weight:bold;color:#2c3e50;font-size:13px;">Correo</td>
+                    <td style="padding:10px 12px;background:#f8f9fa;color:#555;font-size:13px;">%s</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:#eaf4fb;font-weight:bold;color:#2c3e50;font-size:13px;">Contraseña temporal</td>
+                    <td style="padding:10px 12px;background:#eaf4fb;font-family:monospace;color:#2980b9;font-size:15px;">%s</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:#f8f9fa;font-weight:bold;color:#2c3e50;font-size:13px;">Rol</td>
+                    <td style="padding:10px 12px;background:#f8f9fa;color:#555;font-size:13px;">%s</td>
+                  </tr>
+                </table>
+
+                %s
+
+                <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+                <p style="color:#bbb;font-size:12px;text-align:center;">Servly – Gestión de restaurantes</p>
+              </div>
+            </body></html>
+            """.formatted(userName, roleName, email, tempPassword, roleName, alerts.toString());
     }
 
     // ── Envío genérico ────────────────────────────────────────────────────────
@@ -150,5 +234,65 @@ public class EmailService {
               </div>
             </body></html>
             """.formatted(userName, email, tempPassword, roleName);
+    }
+
+    // ── Credenciales temporales para empleado (con 2FA obligatorio) ──────────
+
+    @Async
+    public void sendTempCredentialsWith2FA(String toEmail, String userName,
+                                           String tempPassword, String role) {
+        sendHtmlEmail(toEmail,
+                "Servly – Tus credenciales de empleado",
+                buildTempCredentialsWith2FABody(userName, toEmail, tempPassword, role));
+    }
+
+    private String buildTempCredentialsWith2FABody(String userName, String email,
+                                                    String tempPassword, String role) {
+        String roleName = switch (role) {
+            case "CAJERO"      -> "Cajero";
+            case "MESERO"      -> "Mesero";
+            case "COCINA"      -> "Cocina";
+            case "STOREKEEPER" -> "Bodeguero";
+            default            -> role;
+        };
+        return """
+            <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+            <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+              <div style="max-width:500px;margin:auto;background:white;border-radius:8px;padding:32px;">
+                <h2 style="color:#2c3e50;">Hola, %s 👋</h2>
+                <p style="color:#555;">Has sido registrado como <strong>%s</strong> en <strong>Servly</strong>.</p>
+                <p style="color:#555;">Tus credenciales de acceso temporal son:</p>
+                
+                <table style="width:100%%;margin:24px 0;border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:10px 12px;background:#f8f9fa;font-weight:bold;color:#2c3e50;font-size:13px;">Correo</td>
+                    <td style="padding:10px 12px;background:#f8f9fa;color:#555;font-size:13px;">%s</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:#eaf4fb;font-weight:bold;color:#2c3e50;font-size:13px;">Contraseña temporal</td>
+                    <td style="padding:10px 12px;background:#eaf4fb;font-family:monospace;color:#2980b9;font-size:15px;">%s</td>
+                  </tr>
+                </table>
+
+                <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:16px;border-radius:4px;margin:24px 0;">
+                  <h3 style="margin:0 0 8px 0;color:#856404;font-size:15px;">⚠️ Importante: Primer inicio de sesión</h3>
+                  <ol style="margin:0;padding-left:20px;color:#856404;font-size:13px;line-height:1.6;">
+                    <li>Inicia sesión con tu correo y contraseña temporal</li>
+                    <li>Ingresa el código de verificación que recibirás en este correo (2FA)</li>
+                    <li><strong>Cambia tu contraseña</strong> por una permanente</li>
+                  </ol>
+                </div>
+
+                <div style="background:#d4edda;border-left:4px solid #28a745;padding:12px 16px;border-radius:4px;">
+                  <p style="margin:0;color:#155724;font-size:13px;">
+                    ✅ <strong>2FA habilitado:</strong> Por seguridad, recibirás un código de verificación en tu correo cada vez que inicies sesión.
+                  </p>
+                </div>
+
+                <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+                <p style="color:#bbb;font-size:12px;text-align:center;">Servly – Gestión de restaurantes</p>
+              </div>
+            </body></html>
+            """.formatted(userName, roleName, email, tempPassword);
     }
 }
