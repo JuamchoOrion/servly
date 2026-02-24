@@ -9,12 +9,7 @@ import java.time.LocalDateTime;
 @DiscriminatorValue("TABLE")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class TableSource extends OrderSource {
-
-    @Column(nullable = false)
-    private boolean occupied;
-
-    private LocalDateTime occupiedSince;
+    @Column(nullable = false, unique = true)
+    private Integer tableNumber;
 }
