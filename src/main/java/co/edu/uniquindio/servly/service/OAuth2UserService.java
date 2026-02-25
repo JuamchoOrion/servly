@@ -4,7 +4,6 @@ import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.exception.GoogleOAuth2BlockedException;
 import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.AuthProvider;
-import co.edu.uniquindio.servly.model.enums.Role;
 import co.edu.uniquindio.servly.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Procesa el usuario devuelto por Google tras el login OAuth2.
  *
  * Flujos:
- *  - Email nuevo          → crea cuenta con rol WAITER (ajustar según necesidad)
- *  - Email existente LOCAL → rechaza con error (tiene cuenta con contraseña)
- *  - Email existente GOOGLE → actualiza nombre y providerId
- *  - Email con mustChangePassword = true → BLOQUEA (debe completar primer login)
+ *  - Email existente (LOCAL o GOOGLE) con mustChangePassword = false → permite login
+ *  - Email existente con mustChangePassword = true → BLOQUEA (debe completar primer login)
+ *  - Email NO existe → rechaza (solo admin puede crear cuentas)
  */
 @Slf4j
 @Service
@@ -67,28 +65,26 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 "Su administrador le envió credenciales temporales a su correo."
             );
         }
-        
+
+        // ✅ PERMITIR: Usuario LOCAL que ya completó primer login puede usar Google
+        // Si el provider era LOCAL, lo actualizamos a GOOGLE para mantener consistencia
         if (user.getProvider() == AuthProvider.LOCAL) {
-            throw new AuthException(
-                "Este email ya tiene cuenta con contraseña. Inicia sesión con tu email.");
+            log.info("Usuario LOCAL {} ahora puede usar Google OAuth2", user.getEmail());
+            user.setProvider(AuthProvider.GOOGLE);
         }
+
         user.setName(name);
         user.setProviderId(providerId);
+        log.info("Login OAuth2 permitido para usuario existente: {}", user.getEmail());
         return user;
     }
 
     private User createNew(String email, String name, String providerId) {
-        log.info("Nuevo usuario creado via Google OAuth2: {}", email);
-        return User.builder()
-                .email(email)
-                .name(name)
-                .role(Role.WAITER)          // Ajustar rol por defecto según política
-                .provider(AuthProvider.GOOGLE)
-                .providerId(providerId)
-                .twoFactorEnabled(false)
-                .enabled(true)
-                .mustChangePassword(false)
-                .firstLoginCompleted(true)
-                .build();
+        // ❌ RECHAZAR: No crear cuentas automáticas. Solo admin puede crear usuarios.
+        log.error("Intento de login OAuth2 con email no registrado: {}", email);
+        throw new AuthException(
+            "El email " + email + " no está registrado en el sistema. " +
+            "Un administrador debe crear tu cuenta primero."
+        );
     }
 }
