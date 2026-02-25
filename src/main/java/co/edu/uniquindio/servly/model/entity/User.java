@@ -81,6 +81,35 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean credentialsNonExpired = true;
 
+    // ── Primer Login y Cambio de Password ───────────────
+
+    /**
+     * Indica si el usuario debe cambiar su contraseña en el primer login.
+     * Usado cuando un admin crea un empleado con contraseña temporal.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean mustChangePassword = false;
+
+    /**
+     * Indica si el usuario ya completó su primer login exitosamente.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean firstLoginCompleted = false;
+
+    /**
+     * Fecha y hora en que se cambió la contraseña por última vez.
+     */
+    @Column
+    private LocalDateTime passwordChangedAt;
+
+    /**
+     * Fecha y hora del primer login completado.
+     */
+    @Column
+    private LocalDateTime firstLoginAt;
+
     // ── Auditoría ──────────────────────
 
     @CreationTimestamp

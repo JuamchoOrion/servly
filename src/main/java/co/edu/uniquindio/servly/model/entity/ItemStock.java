@@ -28,4 +28,8 @@ public class ItemStock {
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
+    @ManyToOne
+    @JoinColumn(name = "inventory_id", nullable = false)
+    private Inventory inventory;
+
 }
