@@ -7,9 +7,11 @@ import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.exception.MustChangePasswordException;
 import co.edu.uniquindio.servly.exception.SamePasswordException;
 import co.edu.uniquindio.servly.exception.WeakPasswordException;
+import co.edu.uniquindio.servly.model.entity.RevokedToken;
 import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.AuthProvider;
 import co.edu.uniquindio.servly.model.enums.CodeType;
+import co.edu.uniquindio.servly.repository.RevokedTokenRepository;
 import co.edu.uniquindio.servly.repository.UserRepository;
 import co.edu.uniquindio.servly.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * Servicio principal de autenticación de Servly.
@@ -44,6 +47,7 @@ public class AuthService {
     private final AuthenticationManager    authenticationManager;
     private final VerificationCodeService  codeService;
     private final EmailService             emailService;
+    private final RevokedTokenRepository   revokedTokenRepository;
 
     // ── Login ─────────────────────────────────────────────────────────────────
 
@@ -104,6 +108,7 @@ public class AuthService {
 
         codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.PASSWORD_RESET);
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordVersion(user.getPasswordVersion() + 1);  // Incrementar versión
         userRepository.save(user);
 
         log.info("Contraseña restablecida para: {}", request.getEmail());
@@ -120,6 +125,11 @@ public class AuthService {
             throw new AuthException("Refresh token inválido o expirado");
         }
 
+        // Verificar si el token está en la blacklist
+        if (revokedTokenRepository.existsByToken(request.getRefreshToken())) {
+            throw new AuthException("El token ha sido revocado. Por favor inicie sesión de nuevo");
+        }
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
@@ -128,6 +138,49 @@ public class AuthService {
         }
 
         return buildAuthResponse(user);
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+
+    /**
+     * Invalida un refresh token agregándolo a la blacklist.
+     * El usuario deberá autenticarse de nuevo para obtener nuevos tokens.
+     */
+    @Transactional
+    public MessageResponse logout(RefreshTokenRequest request) {
+        String email;
+        try {
+            email = jwtTokenProvider.extractUsername(request.getRefreshToken());
+        } catch (Exception e) {
+            // Si no se puede extraer el email, igual agregamos el token a la blacklist
+            email = "unknown";
+        }
+
+        // Extraer la fecha de expiración del token
+        LocalDateTime expiresAt;
+        try {
+            Date expirationDate = jwtTokenProvider.extractExpiration(request.getRefreshToken());
+            expiresAt = LocalDateTime.ofInstant(
+                expirationDate.toInstant(), 
+                java.time.ZoneId.systemDefault()
+            );
+        } catch (Exception e) {
+            // Si no se puede extraer, usamos una fecha por defecto (24 horas)
+            expiresAt = LocalDateTime.now().plusHours(24);
+        }
+
+        // Guardar en la blacklist
+        RevokedToken revokedToken = RevokedToken.builder()
+                .token(request.getRefreshToken())
+                .userEmail(email)
+                .expiresAt(expiresAt)
+                .build();
+
+        revokedTokenRepository.save(revokedToken);
+
+        log.info("Token revocado para usuario: {} (expires: {})", email, expiresAt);
+
+        return new MessageResponse("Sesión cerrada exitosamente");
     }
 
     // ── Utilidad pública ─────────────────────────────────────────────────────
@@ -182,7 +235,8 @@ public class AuthService {
         user.setFirstLoginCompleted(true);
         user.setFirstLoginAt(LocalDateTime.now());
         user.setPasswordChangedAt(LocalDateTime.now());
-        
+        user.setPasswordVersion(user.getPasswordVersion() + 1);  // Incrementar versión
+
         userRepository.save(user);
 
         log.info("Password cambiado exitosamente para usuario: {}", email);

@@ -22,9 +22,11 @@ import org.springframework.web.bind.annotation.*;
  *   POST /api/auth/forgot-password
  *   POST /api/auth/reset-password
  *   POST /api/auth/refresh-token
+ *   POST /api/auth/logout
  *
  * Protegidos:
  *   GET  /api/auth/me
+ *   POST /api/auth/force-password-change
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -61,7 +63,7 @@ public class AuthController {
     /**
      * Endpoint para cambiar la contraseña en el primer login.
      * Solo accesible cuando mustChangePassword = true.
-     * 
+     *
      * El usuario debe estar autenticado (haber pasado por login + 2FA)
      * pero con el flag mustChangePassword activo.
      */
@@ -69,11 +71,24 @@ public class AuthController {
     public ResponseEntity<AuthResponse> forcePasswordChange(
             @Valid @RequestBody ForcePasswordChangeRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         AuthResponse response = authService.forcePasswordChange(
-            request, 
+            request,
             userDetails.getUsername()
         );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cierra la sesión del usuario invalidando el refresh token.
+     * El token se agrega a la blacklist y no podrá usarse para renovar el acceso.
+     *
+     * El access token actual seguirá siendo válido hasta su expiración natural,
+     * pero no podrá renovarse.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<MessageResponse> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        MessageResponse response = authService.logout(request);
         return ResponseEntity.ok(response);
     }
 

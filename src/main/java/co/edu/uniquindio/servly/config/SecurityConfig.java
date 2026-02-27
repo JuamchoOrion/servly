@@ -108,6 +108,7 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/refresh-token",
+                                "/api/auth/logout",
                                 "/api/client/session",       // Escaneo QR
                                 "/oauth2/**",
                                 "/login/oauth2/**"

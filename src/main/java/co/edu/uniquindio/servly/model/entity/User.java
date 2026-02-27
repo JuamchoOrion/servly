@@ -110,6 +110,14 @@ public class User implements UserDetails {
     @Column
     private LocalDateTime firstLoginAt;
 
+    /**
+     * Versión de la contraseña. Se incrementa cada vez que el usuario cambia su contraseña.
+     * Usado para invalidar tokens JWT antiguos al cambiar la contraseña.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer passwordVersion = 0;
+
     // ── Auditoría ──────────────────────
 
     @CreationTimestamp
