@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<MessageResponse> handleMustChangePassword(
             MustChangePasswordException ex, HttpServletRequest request) {
         log.warn("MustChangePasswordException en {}: {}", request.getRequestURI(), ex.getMessage());
-        return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED)
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new MessageResponse(ex.getMessage()));
     }
 
@@ -89,19 +89,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(WeakPasswordException.class)
-    public ResponseEntity<MessageResponse> handleWeakPassword(
+    public ResponseEntity<Map<String, String>> handleWeakPassword(
             WeakPasswordException ex, HttpServletRequest request) {
         log.warn("WeakPasswordException en {}: {}", request.getRequestURI(), ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new MessageResponse(ex.getMessage()));
+        Map<String, String> error = new HashMap<>();
+        error.put("newPassword", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(SamePasswordException.class)
-    public ResponseEntity<MessageResponse> handleSamePassword(
+    public ResponseEntity<Map<String, String>> handleSamePassword(
             SamePasswordException ex, HttpServletRequest request) {
         log.warn("SamePasswordException en {}: {}", request.getRequestURI(), ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new MessageResponse(ex.getMessage()));
+        Map<String, String> error = new HashMap<>();
+        error.put("newPassword", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(GoogleOAuth2BlockedException.class)

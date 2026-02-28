@@ -99,7 +99,7 @@ public class UserService {
         if (request.getRole() == Role.ADMIN) {
             throw new AuthException(
                 "Para crear un ADMIN use el método createUser. " +
-                "Este método es solo para roles de empleado: CAJERO, MESERO, COCINA, STOREKEEPER"
+                "Este método es solo para roles de empleado: CASHIER, WAITER, KITCHEN, STOREKEEPER"
             );
         }
 

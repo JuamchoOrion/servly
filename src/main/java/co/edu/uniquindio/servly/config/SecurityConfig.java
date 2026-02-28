@@ -34,12 +34,12 @@ import java.util.Map;
  *
  * Dos tipos de autenticación coexisten:
  *  1. JWT de usuario (staff)   → procesa JwtAuthenticationFilter
- *  2. Token de mesa (cliente)  → procesa TableSessionFilter → ROLE_CLIENTE
+ *  2. Token de mesa (cliente)  → procesa TableSessionFilter → ROLE_CLIENT
  *
  * Rutas:
  *  /api/auth/**       → públicas (login, 2FA, reset)
  *  /api/client/session → pública (escaneo QR)
- *  /api/client/**     → requiere ROLE_CLIENTE (sesión de mesa)
+ *  /api/client/**     → requiere ROLE_CLIENT (sesión de mesa)
  *  /api/admin/**      → requiere ROLE_ADMIN
  *  /api/staff/**      → requiere rol de staff
  */
@@ -66,7 +66,11 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            log.warn("Acceso no autorizado a {}: {}", request.getRequestURI(), authException.getMessage());
+                            String uri = request.getRequestURI();
+                            // No loguear accesos no autorizados a /error (evita spam de logs)
+                            if (!"/error".equals(uri)) {
+                                log.warn("Acceso no autorizado a {}: {}", uri, authException.getMessage());
+                            }
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             response.setCharacterEncoding("UTF-8");
@@ -108,6 +112,7 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/refresh-token",
+                                "/api/auth/logout",
                                 "/api/client/session",       // Escaneo QR
                                 "/oauth2/**",
                                 "/login/oauth2/**"
@@ -123,11 +128,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // ── Cliente anónimo (sesión de mesa) ──────────────────────────
-                        .requestMatchers("/api/client/**").hasRole("CLIENTE")
+                        .requestMatchers("/api/client/**").hasRole("CLIENT")
 
                         // ── Staff ─────────────────────────────────────────────────────
                         .requestMatchers("/api/staff/**")
-                        .hasAnyRole("ADMIN", "CAJERO", "MESERO", "COCINA", "STOREKEEPER")
+                        .hasAnyRole("ADMIN", "CASHIER", "WAITER", "KITCHEN", "STOREKEEPER")
 
                         .anyRequest().authenticated()
                 )
@@ -151,7 +156,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }

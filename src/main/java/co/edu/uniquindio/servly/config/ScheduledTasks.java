@@ -1,5 +1,6 @@
 package co.edu.uniquindio.servly.config;
 
+import co.edu.uniquindio.servly.repository.RevokedTokenRepository;
 import co.edu.uniquindio.servly.repository.TableSessionRepository;
 import co.edu.uniquindio.servly.repository.VerificationCodeRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class ScheduledTasks {
 
     private final VerificationCodeRepository codeRepository;
     private final TableSessionRepository     tableSessionRepository;
+    private final RevokedTokenRepository     revokedTokenRepository;
 
     /** Limpia códigos OTP expirados o usados — cada hora. */
     @Scheduled(cron = "0 0 * * * *")
@@ -32,5 +34,13 @@ public class ScheduledTasks {
     public void closeExpiredTableSessions() {
         tableSessionRepository.closeExpiredSessions(LocalDateTime.now());
         log.debug("Cierre de sesiones de mesa expiradas ejecutado");
+    }
+
+    /** Limpia tokens revocados expirados de la blacklist — diariamente a las 3 AM. */
+    @Scheduled(cron = "0 0 3 * * *")
+    @Transactional
+    public void cleanExpiredRevokedTokens() {
+        revokedTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+        log.debug("Limpieza de tokens revocados expirados ejecutada");
     }
 }

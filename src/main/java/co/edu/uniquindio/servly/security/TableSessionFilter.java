@@ -22,7 +22,7 @@ import java.util.List;
  * Filtro exclusivo para /api/client/**
  *
  * Valida el sessionToken de mesa y, si es correcto,
- * inyecta ROLE_CLIENTE en el SecurityContext.
+ * inyecta ROLE_CLIENT en el SecurityContext.
  * El cliente nunca necesita una cuenta de usuario.
  */
 @Slf4j
@@ -77,11 +77,11 @@ public class TableSessionFilter extends OncePerRequestFilter {
                 new UsernamePasswordAuthenticationToken(
                         "table:" + tableNumber,
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_CLIENTE"))
+                        List.of(new SimpleGrantedAuthority("ROLE_CLIENT"))
                 );
         auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(auth);
-        log.debug("Sesión de mesa {} autenticada como CLIENTE", tableNumber);
+        log.debug("Sesión de mesa {} autenticada como CLIENT", tableNumber);
 
         filterChain.doFilter(request, response);
     }
