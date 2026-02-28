@@ -2,6 +2,7 @@ package co.edu.uniquindio.servly.security;
 
 import co.edu.uniquindio.servly.exception.AccountDisabledException;
 import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.exception.MustChangePasswordException;
 import co.edu.uniquindio.servly.model.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -62,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // Validaciones adicionales si es una instancia de User
             if (userDetails instanceof User user) {
-                validateUserState(user);
+                validateUserState(user, request);
             }
 
             if (jwtTokenProvider.isTokenValid(jwt, userDetails)) {
@@ -82,7 +83,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * Valida el estado de la cuenta del usuario.
      * Lanza excepciones apropiadas según el estado.
      */
-    private void validateUserState(User user) {
+    private void validateUserState(User user, HttpServletRequest request) {
         if (!user.isEnabled()) {
             log.warn("Intento de acceso con cuenta deshabilitada: {}", user.getEmail());
             throw new AccountDisabledException(
@@ -99,6 +100,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.warn("Intento de acceso con contraseña expirada: {}", user.getEmail());
             throw new AuthException(
                 "Su contraseña ha expirado. Solicite un restablecimiento.");
+        }
+
+        // Validar si el usuario debe cambiar la contraseña (primer login)
+        // Solo puede acceder al endpoint de cambio de contraseña forzado
+        if (user.isMustChangePassword() && !user.isFirstLoginCompleted()) {
+            String requestURI = request.getRequestURI();
+            if (!"/api/auth/force-password-change".equals(requestURI)) {
+                log.warn("Usuario {} debe cambiar contraseña antes de acceder a {}", user.getEmail(), requestURI);
+                throw new MustChangePasswordException(
+                    "Debe cambiar su contraseña antes de acceder a este recurso. Diríjase a /api/auth/force-password-change");
+            }
         }
 
         log.debug("Usuario {} tiene estado válido", user.getEmail());

@@ -63,7 +63,10 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
-        if (user.isTwoFactorEnabled()) {
+        // Si el usuario debe cambiar contraseña (primer login), requerir 2FA
+        if (user.isMustChangePassword() && !user.isFirstLoginCompleted()) {
+            log.info("Login de usuario con primer login pendiente: {}", user.getEmail());
+            // Generar y enviar código 2FA para el primer login
             String code = codeService.generateAndSave(user.getEmail(), CodeType.TWO_FACTOR);
             emailService.sendTwoFactorCode(user.getEmail(), user.getName(), code);
             log.info("Código 2FA enviado a: {}", user.getEmail());
@@ -71,17 +74,26 @@ public class AuthService {
                     "Verificación en 2 pasos requerida. Se envió un código a tu correo electrónico.");
         }
 
+        // Login normal sin 2FA (después del primer login ya no se pide 2FA)
         return buildAuthResponse(user);
     }
 
     // ── Verificación 2FA ──────────────────────────────────────────────────────
 
+    /**
+     * Verifica el código 2FA.
+     * - Si es primer login (mustChangePassword), retorna un flag para forzar cambio de contraseña
+     * - Si no, retorna los tokens de acceso normalmente
+     */
     public AuthResponse verifyTwoFactor(TwoFactorRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
         codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.TWO_FACTOR);
         log.info("2FA verificado para: {}", request.getEmail());
+        
+        // Si es primer login, el frontend deberá redirigir al cambio de contraseña
+        // Los tokens se entregan pero el usuario debe cambiar la contraseña
         return buildAuthResponse(user);
     }
 
@@ -223,7 +235,7 @@ public class AuthService {
         // Validar que la nueva contraseña no sea igual a la temporal
         if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
             throw new SamePasswordException(
-                "La nueva contraseña debe ser diferente a la contraseña temporal");
+                "La nueva contraseña debe ser diferente a la contraseña actual");
         }
 
         // Validar fortaleza de la contraseña
@@ -233,6 +245,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setMustChangePassword(false);
         user.setFirstLoginCompleted(true);
+        user.setTwoFactorEnabled(false);  // Desactivar 2FA por defecto en primer login
         user.setFirstLoginAt(LocalDateTime.now());
         user.setPasswordChangedAt(LocalDateTime.now());
         user.setPasswordVersion(user.getPasswordVersion() + 1);  // Incrementar versión

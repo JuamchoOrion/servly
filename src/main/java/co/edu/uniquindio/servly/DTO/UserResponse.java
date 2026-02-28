@@ -28,6 +28,8 @@ public class UserResponse {
     private boolean       enabled;
     private boolean       twoFactorEnabled;
     private LocalDateTime createdAt;
+    private boolean       mustChangePassword;
+    private boolean       firstLoginCompleted;
 
     public static UserResponse from(User user) {
         return UserResponse.builder()
@@ -39,6 +41,8 @@ public class UserResponse {
                 .enabled(user.isEnabled())
                 .twoFactorEnabled(user.isTwoFactorEnabled())
                 .createdAt(user.getCreatedAt())
+                .mustChangePassword(user.isMustChangePassword())
+                .firstLoginCompleted(user.isFirstLoginCompleted())
                 .build();
     }
 }
