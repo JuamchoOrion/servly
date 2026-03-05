@@ -56,12 +56,16 @@ public class SecurityConfig {
     private final OAuth2UserService                  oAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
+    private final org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                // ✅ HABILITAR CORS - PRIMERO EN LA CADENA
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
@@ -171,5 +175,14 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
+    }
+
+    /**
+     * RestTemplate bean para hacer solicitudes HTTP.
+     * Usado por RecaptchaService para verificar tokens con Google.
+     */
+    @Bean
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
     }
 }

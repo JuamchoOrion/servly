@@ -4,6 +4,7 @@ import co.edu.uniquindio.servly.DTO.*;
 import co.edu.uniquindio.servly.DTO.AuthResponse;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.DTO.UserResponse;
+import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +36,39 @@ public class AuthController {
 
     private final AuthService authService;
 
+    /**
+     * POST /api/auth/login
+     *
+     * Autentica un usuario con email, contraseña y verificación de reCAPTCHA.
+     *
+     * @param request LoginRequest con email, password, recaptchaToken
+     * @return AuthResponse con JWT, roles y datos del usuario
+     *
+     * @throws AuthException 401 si credenciales son inválidas
+     * @throws AuthException 400 si reCAPTCHA es inválido
+     * @throws MustChangePasswordException si es primer login
+     */
     @PostMapping("/login")
-    public ResponseEntity<Object> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        Object result = authService.login(request);
+
+        // Si es primer login con 2FA requerido, retorna mensaje
+        if (result instanceof MessageResponse) {
+            // En este caso, el frontend debe hacer POST a /api/auth/verify-2fa
+            MessageResponse msgResponse = (MessageResponse) result;
+            return ResponseEntity.accepted()
+                    .header("X-2FA-Required", "true")
+                    .body(msgResponse);
+        }
+
+        // Login exitoso: retornar AuthResponse
+        if (result instanceof AuthResponse) {
+            AuthResponse response = (AuthResponse) result;
+            return ResponseEntity.ok(response);
+        }
+
+        // No debería llegar aquí
+        throw new AuthException("Respuesta inesperada del servidor");
     }
 
     @PostMapping("/verify-2fa")

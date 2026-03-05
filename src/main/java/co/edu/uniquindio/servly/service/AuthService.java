@@ -48,10 +48,17 @@ public class AuthService {
     private final VerificationCodeService  codeService;
     private final EmailService             emailService;
     private final RevokedTokenRepository   revokedTokenRepository;
+    private final RecaptchaService         recaptchaService;
 
     // ── Login ─────────────────────────────────────────────────────────────────
 
     public Object login(LoginRequest request) {
+        // Validar reCAPTCHA antes de intentar la autenticación
+        if (!recaptchaService.verifyToken(request.getRecaptchaToken())) {
+            log.warn("Intento de login fallido por reCAPTCHA inválido para: {}", request.getEmail());
+            throw new AuthException("Validación de reCAPTCHA fallida. Por favor, intenta nuevamente.");
+        }
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(

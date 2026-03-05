@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>reCAPTCHA Token Generator - Servly Testing</title>
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #667eea;
+        }
+
+        .timer {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #856404;
+            display: none;
+        }
+
+        .timer.active {
+            display: block;
+        }
+
+        .timer span {
+            font-size: 24px;
+            color: #d39e00;
+        }
+
+        .recaptcha-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .g-recaptcha {
+            transform: scale(1);
+            transform-origin: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-copy {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-copy:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-copy:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+
+        .btn-reset:hover {
+            background: #e9ecef;
+        }
+
+        .output-section {
+            margin-top: 30px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            min-height: 120px;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+
+        .token-info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #1565c0;
+            display: none;
+        }
+
+        .token-info.active {
+            display: block;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .copy-hint {
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .g-recaptcha {
+                transform: scale(0.77);
+                transform-origin: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 reCAPTCHA Token Generator</h1>
+        <p class="subtitle">Servly Testing Tool</p>
+
+        <div class="info-box">
+            <strong>⚠️ Importante:</strong> El token expira en <strong>2 minutos</strong>.
+            Después de completar el reCAPTCHA, copia inmediatamente el token y úsalo en Postman.
+            <strong>No puede reutilizar el mismo token.</strong>
+        </div>
+
+        <div class="timer" id="timer">
+            ⏱️ Tiempo: <span id="timerValue">120</span>s restantes
+        </div>
+
+        <h2 style="font-size: 16px; color: #333; margin: 20px 0 15px; text-align: center;">
+            Paso 1: Completa el reCAPTCHA
+        </h2>
+
+        <div class="recaptcha-container">
+            <div class="g-recaptcha"
+                 id="recaptcha"
+                 data-sitekey="6LcTHIEsAAAAAJuGnqtBdfztpJS1_nFvbzDkmYmm"
+                 data-callback="onRecaptchaSuccess"
+                 data-expired-callback="onRecaptchaExpired">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-copy" id="copyBtn" onclick="copyToken()" disabled>
+                📋 Copiar Token
+            </button>
+            <button class="btn-reset" onclick="resetToken()">
+                🔄 Limpiar
+            </button>
+        </div>
+
+        <div class="output-section">
+            <label for="tokenOutput">Paso 2: Copia este token y úsalo en Postman</label>
+            <textarea
+                id="tokenOutput"
+                readonly
+                placeholder="El token aparecerá aquí..."></textarea>
+
+            <div class="copy-hint">
+                💡 Selecciona todo el texto y presiona Ctrl+C para copiar
+            </div>
+
+            <div class="token-info" id="tokenInfo">
+                ✅ Token generado exitosamente. Úsalo en Postman dentro de 2 minutos.
+            </div>
+
+            <div class="status" id="status"></div>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; line-height: 1.6;">
+            <strong>Instrucciones:</strong>
+            <ol style="margin-left: 20px; margin-top: 10px;">
+                <li>Haz click en el checkbox de reCAPTCHA</li>
+                <li>Espera a que Google verifique (1-2 segundos)</li>
+                <li>Haz click en "Copiar Token"</li>
+                <li>Abre Postman</li>
+                <li>Pega el token en el campo "recaptchaToken"</li>
+                <li>Envía la solicitud POST a /api/auth/login</li>
+                <li>⏱️ ¡Todo debe hacerse en menos de 2 minutos!</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let captchaToken = '';
+        let tokenTime = null;
+        let timerInterval = null;
+
+        function onRecaptchaSuccess(token) {
+            console.log('✅ reCAPTCHA completado exitosamente');
+            captchaToken = token;
+            tokenTime = Date.now();
+
+            document.getElementById('copyBtn').disabled = false;
+            document.getElementById('tokenOutput').value = token;
+            document.getElementById('tokenInfo').classList.add('active');
+
+            startTimer();
+
+            showStatus('✅ reCAPTCHA completado. Puedes copiar el token ahora.', 'success');
+        }
+
+        function onRecaptchaExpired() {
+            console.log('❌ reCAPTCHA expiró');
+            captchaToken = '';
+            document.getElementById('copyBtn').disabled = true;
+            document.getElementById('tokenOutput').value = '';
+            document.getElementById('tokenInfo').classList.remove('active');
+            stopTimer();
+            showStatus('❌ reCAPTCHA expiró. Complétalo de nuevo.', 'error');
+        }
+
+        function copyToken() {
+            if (!captchaToken) {
+                showStatus('❌ Por favor completa el reCAPTCHA primero', 'error');
+                return;
+            }
+
+            const textarea = document.getElementById('tokenOutput');
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                showStatus('✅ ¡Token copiado al portapapeles! Úsalo en Postman ahora.', 'success');
+                console.log('Token copiado:', captchaToken.substring(0, 50) + '...');
+            } catch (err) {
+                showStatus('❌ Error al copiar. Intenta seleccionar manualmente.', 'error');
+            }
+        }
+
+        function resetToken() {
+            captchaToken = '';
+            tokenTime = null;
+            document.getElementById('copyBtn').disabled = true;
+            document.getElementById('tokenOutput').value = '';
+            document.getElementById('tokenInfo').classList.remove('active');
+            document.getElementById('status').style.display = 'none';
+            stopTimer();
+
+            // Resetear widget de reCAPTCHA
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+                console.log('reCAPTCHA reseteado');
+            }
+        }
+
+        function startTimer() {
+            stopTimer();
+            const timerDiv = document.getElementById('timer');
+            timerDiv.classList.add('active');
+
+            let secondsLeft = 120;
+
+            timerInterval = setInterval(() => {
+                secondsLeft--;
+                document.getElementById('timerValue').textContent = secondsLeft;
+
+                if (secondsLeft <= 0) {
+                    stopTimer();
+                    onRecaptchaExpired();
+                } else if (secondsLeft <= 30) {
+                    timerDiv.style.background = '#ffe8e8';
+                    timerDiv.style.borderColor = '#ff6b6b';
+                    timerDiv.style.color = '#c92a2a';
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timer').classList.remove('active');
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+
+        // Verificar que reCAPTCHA esté listo
+        window.addEventListener('load', () => {
+            if (typeof grecaptcha === 'undefined') {
+                showStatus('❌ Error: No se pudo cargar reCAPTCHA. Recarga la página.', 'error');
+            } else {
+                console.log('✅ reCAPTCHA cargado correctamente');
+            }
+        });
+
+        // Limpiar timer cuando se cierre la pestaña
+        window.addEventListener('beforeunload', () => {
+            stopTimer();
+        });
+    </script>
+</body>
+</html>
+
