@@ -1,8 +1,14 @@
 package co.edu.uniquindio.servly.service;
 
 import co.edu.uniquindio.servly.DTO.*;
-import co.edu.uniquindio.servly.DTO.AuthResponse;
+import co.edu.uniquindio.servly.DTO.Auth.AuthResponse;
+import co.edu.uniquindio.servly.DTO.Auth.LoginRequest;
+import co.edu.uniquindio.servly.DTO.Auth.RefreshTokenRequest;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
+import co.edu.uniquindio.servly.DTO.Password.ForcePasswordChangeRequest;
+import co.edu.uniquindio.servly.DTO.Password.ForgotPasswordRequest;
+import co.edu.uniquindio.servly.DTO.Password.ResetPasswordRequest;
+import co.edu.uniquindio.servly.DTO.Roles.UserResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.exception.MustChangePasswordException;
 import co.edu.uniquindio.servly.exception.SamePasswordException;

@@ -1,4 +1,4 @@
-package co.edu.uniquindio.servly.DTO;
+package co.edu.uniquindio.servly.DTO.Password;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

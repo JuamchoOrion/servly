@@ -2,6 +2,7 @@ package co.edu.uniquindio.servly.util;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 
+@Component
 public class CookieUtil {
     /**
      * Agrega una cookie HTTP-only con el token JWT

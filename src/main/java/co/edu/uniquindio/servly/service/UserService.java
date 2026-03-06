@@ -1,6 +1,10 @@
 package co.edu.uniquindio.servly.service;
 
 import co.edu.uniquindio.servly.DTO.*;
+import co.edu.uniquindio.servly.DTO.Auth.RegisterRequest;
+import co.edu.uniquindio.servly.DTO.Roles.CreateEmployeeRequest;
+import co.edu.uniquindio.servly.DTO.Roles.UpdateRoleRequest;
+import co.edu.uniquindio.servly.DTO.Roles.UserResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.AuthProvider;

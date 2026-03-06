@@ -1,9 +1,9 @@
 package co.edu.uniquindio.servly.controller;
 
-import co.edu.uniquindio.servly.DTO.CreateEmployeeRequest;
+import co.edu.uniquindio.servly.DTO.Roles.CreateEmployeeRequest;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
-import co.edu.uniquindio.servly.DTO.UpdateRoleRequest;
-import co.edu.uniquindio.servly.DTO.UserResponse;
+import co.edu.uniquindio.servly.DTO.Roles.UpdateRoleRequest;
+import co.edu.uniquindio.servly.DTO.Roles.UserResponse;
 import co.edu.uniquindio.servly.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

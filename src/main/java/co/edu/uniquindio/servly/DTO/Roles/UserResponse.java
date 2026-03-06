@@ -1,4 +1,4 @@
-package co.edu.uniquindio.servly.DTO;
+package co.edu.uniquindio.servly.DTO.Roles;
 
 import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.AuthProvider;

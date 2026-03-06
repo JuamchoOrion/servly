@@ -1,6 +1,6 @@
 package co.edu.uniquindio.servly.service;
 
-import co.edu.uniquindio.servly.DTO.RecaptchaResponse;
+import co.edu.uniquindio.servly.DTO.Auth.RecaptchaResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
