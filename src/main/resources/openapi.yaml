@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: Servly Admin API
+  version: 1.0.0
+  description: Endpoints exclusivos para administración del sistema.
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+
+  /api/admin/employees:
+    post:
+      tags:
+        - Admin
+      summary: Crear empleado
+      description: Crea un empleado con contraseña temporal y 2FA obligatorio.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeRequest'
+      responses:
+        '200':
+          description: Empleado creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Acceso denegado
+
+  /api/admin/users:
+    get:
+      tags:
+        - Admin
+      summary: Listar todos los usuarios
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Acceso denegado
+
+  /api/admin/users/{userId}:
+    get:
+      tags:
+        - Admin
+      summary: Obtener usuario por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Usuario no encontrado
+
+    delete:
+      tags:
+        - Admin
+      summary: Eliminar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usuario eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Usuario no encontrado
+
+  /api/admin/users/{userId}/role:
+    put:
+      tags:
+        - Admin
+      summary: Cambiar rol de usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Rol actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Usuario no encontrado
+
+  /api/admin/users/{userId}/toggle:
+    patch:
+      tags:
+        - Admin
+      summary: Activar o desactivar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estado actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Usuario no encontrado
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    CreateEmployeeRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: juan@example.com
+
+    UpdateRoleRequest:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          example: EMPLOYEE
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 123
+        name:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          example: juan@example.com
+        role:
+          type: string
+          example: ADMIN
+        active:
+          type: boolean
+          example: true
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Usuario eliminado correctamente
