@@ -6,6 +6,8 @@ import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.DTO.UserResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
+import co.edu.uniquindio.servly.exception.MustChangePasswordException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import co.edu.uniquindio.servly.util.CookieUtil;
+
+import java.util.Map;
 
 /**
  * Endpoints de autenticación para el staff.
@@ -35,6 +40,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     /**
      * POST /api/auth/login
@@ -49,7 +55,7 @@ public class AuthController {
      * @throws MustChangePasswordException si es primer login
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         Object result = authService.login(request);
 
         // Si es primer login con 2FA requerido, retorna mensaje
@@ -63,8 +69,21 @@ public class AuthController {
 
         // Login exitoso: retornar AuthResponse
         if (result instanceof AuthResponse) {
-            AuthResponse response = (AuthResponse) result;
-            return ResponseEntity.ok(response);
+            AuthResponse authResponse = (AuthResponse) result;
+
+            // Guardar tokens en cookies
+            cookieUtil.addJwtCookie(response, authResponse.getAccessToken(), 86400);
+            cookieUtil.addRefreshTokenCookie(response, authResponse.getRefreshToken(), 604800);
+
+            // Retornar datos del usuario (sin tokens en el body)
+            return ResponseEntity.ok(Map.of(
+                    "userId", authResponse.getUserId(),
+                    "email", authResponse.getEmail(),
+                    "name", authResponse.getName(),
+                    "role", authResponse.getRole(),
+                    "mustChangePassword", authResponse.isMustChangePassword(),
+                    "firstLoginCompleted", authResponse.isFirstLoginCompleted()
+            ));
         }
 
         // No debería llegar aquí
@@ -72,8 +91,25 @@ public class AuthController {
     }
 
     @PostMapping("/verify-2fa")
-    public AuthResponse verifyTwoFactor(@Valid @RequestBody TwoFactorRequest request) {
-        return authService.verifyTwoFactor(request);
+    public ResponseEntity<?> verifyTwoFactor(
+            @Valid @RequestBody TwoFactorRequest request,
+            HttpServletResponse response) {
+
+        AuthResponse authResponse = authService.verifyTwoFactor(request);
+
+        // Guardar tokens en cookies
+        cookieUtil.addJwtCookie(response, authResponse.getAccessToken(), 86400);
+        cookieUtil.addRefreshTokenCookie(response, authResponse.getRefreshToken(), 604800);
+
+        // Retornar datos del usuario (sin tokens en el body)
+        return ResponseEntity.ok(Map.of(
+                "userId", authResponse.getUserId(),
+                "email", authResponse.getEmail(),
+                "name", authResponse.getName(),
+                "role", authResponse.getRole(),
+                "mustChangePassword", authResponse.isMustChangePassword(),
+                "firstLoginCompleted", authResponse.isFirstLoginCompleted()
+        ));
     }
 
     @PostMapping("/forgot-password")
@@ -87,8 +123,22 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public AuthResponse refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        return authService.refreshToken(request);
+    public ResponseEntity<?> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request,
+            HttpServletResponse response) {
+
+        AuthResponse authResponse = authService.refreshToken(request);
+
+        // Actualizar cookies con nuevos tokens
+        cookieUtil.addJwtCookie(response, authResponse.getAccessToken(), 86400);
+        cookieUtil.addRefreshTokenCookie(response, authResponse.getRefreshToken(), 604800);
+
+        return ResponseEntity.ok(Map.of(
+                "userId", authResponse.getUserId(),
+                "email", authResponse.getEmail(),
+                "name", authResponse.getName(),
+                "role", authResponse.getRole()
+        ));
     }
 
     /**
@@ -118,9 +168,16 @@ public class AuthController {
      * pero no podrá renovarse.
      */
     @PostMapping("/logout")
-    public ResponseEntity<MessageResponse> logout(@Valid @RequestBody RefreshTokenRequest request) {
-        MessageResponse response = authService.logout(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<MessageResponse> logout(
+            @Valid @RequestBody RefreshTokenRequest request,
+            HttpServletResponse response) {
+
+        MessageResponse responseMsg = authService.logout(request);
+
+        // Eliminar cookies
+        cookieUtil.removeJwtCookies(response);
+
+        return ResponseEntity.ok(responseMsg);
     }
 
     @GetMapping("/me")
