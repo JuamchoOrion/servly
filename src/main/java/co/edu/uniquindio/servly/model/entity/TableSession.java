@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
         name = "table_sessions",
         indexes = {
                 @Index(name = "idx_table_session_token",        columnList = "session_token"),
-                @Index(name = "idx_table_session_table_active", columnList = "table_number, active")
+                @Index(name = "idx_table_session_restaurant_table_active", columnList = "restaurant_table_id, active")
         }
 )
 @Data
@@ -36,8 +36,9 @@ public class TableSession {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
-    private Integer tableNumber;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "restaurant_table_id", nullable = false)
+    private RestaurantTable restaurantTable;
 
     @Column(name = "session_token", nullable = false, length = 512)
     private String sessionToken;

@@ -3,7 +3,9 @@ package co.edu.uniquindio.servly.service;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.DTO.TableSessionResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.model.entity.RestaurantTable;
 import co.edu.uniquindio.servly.model.entity.TableSession;
+import co.edu.uniquindio.servly.repository.RestaurantTableRepository;
 import co.edu.uniquindio.servly.repository.TableSessionRepository;
 import co.edu.uniquindio.servly.security.TableJwtProvider;
 import lombok.RequiredArgsConstructor;
@@ -34,15 +36,18 @@ import java.util.Optional;
 public class TableSessionService {
 
     private final TableSessionRepository sessionRepository;
-    private final TableJwtProvider       tableJwtProvider;
+    private final RestaurantTableRepository restaurantTableRepository;
+    private final TableJwtProvider tableJwtProvider;
 
     public TableSessionResponse openSession(Integer tableNumber) {
         if (tableNumber == null || tableNumber < 1) {
             throw new AuthException("Número de mesa inválido");
         }
 
-        Optional<TableSession> existing =
-                sessionRepository.findByTableNumberAndActiveTrue(tableNumber);
+        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+                .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
+
+        Optional<TableSession> existing = sessionRepository.findByRestaurantTableAndActiveTrue(table);
 
         if (existing.isPresent()) {
             log.debug("Mesa {} ya tiene sesión activa, reutilizando", tableNumber);
@@ -54,7 +59,7 @@ public class TableSessionService {
 
         // Guardar con token vacío para obtener el ID generado
         TableSession session = TableSession.builder()
-                .tableNumber(tableNumber)
+                .restaurantTable(table)
                 .sessionToken("")
                 .active(true)
                 .expiresAt(expiresAt)
@@ -72,8 +77,10 @@ public class TableSessionService {
     }
 
     public MessageResponse closeSession(Integer tableNumber) {
-        TableSession session = sessionRepository
-                .findByTableNumberAndActiveTrue(tableNumber)
+        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+                .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
+
+        TableSession session = sessionRepository.findByRestaurantTableAndActiveTrue(table)
                 .orElseThrow(() -> new AuthException(
                         "La mesa " + tableNumber + " no tiene una sesión activa"));
 
@@ -87,13 +94,16 @@ public class TableSessionService {
 
     @Transactional(readOnly = true)
     public boolean isTableActive(Integer tableNumber) {
-        return sessionRepository.existsByTableNumberAndActiveTrue(tableNumber);
+        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+                .orElse(null);
+        if (table == null) return false;
+        return sessionRepository.existsByRestaurantTableAndActiveTrue(table);
     }
 
     private TableSessionResponse toResponse(TableSession s) {
         return TableSessionResponse.builder()
                 .sessionToken(s.getSessionToken())
-                .tableNumber(s.getTableNumber())
+                .tableNumber(s.getRestaurantTable().getTableNumber())
                 .sessionId(s.getId())
                 .expiresAt(s.getExpiresAt())
                 .tokenType("Bearer")
