@@ -68,7 +68,8 @@ public class CorsConfig {
                 "Authorization",
                 "Content-Type",
                 "X-Total-Count",
-                "X-Page-Count"
+                "X-Page-Count",
+                "Set-Cookie"  // ✅ Importante para que el frontend vea las cookies
         ));
 
         // ✅ PERMITIR CREDENCIALES (cookies, headers de autorización)

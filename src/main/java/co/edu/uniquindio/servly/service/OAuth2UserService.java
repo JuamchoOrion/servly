@@ -7,15 +7,15 @@ import co.edu.uniquindio.servly.model.enums.AuthProvider;
 import co.edu.uniquindio.servly.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Procesa el usuario devuelto por Google tras el login OAuth2.
+ * Procesa el usuario devuelto por Google tras el login OAuth2/OpenID Connect.
  *
  * Flujos:
  *  - Email existente (LOCAL o GOOGLE) con mustChangePassword = false → permite login
@@ -25,26 +25,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OAuth2UserService extends DefaultOAuth2UserService {
+public class OAuth2UserService extends OidcUserService {
 
     private final UserRepository userRepository;
 
     @Override
     @Transactional
-    public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(request);
+    public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+        // Cargar el usuario OIDC estándar desde Google
+        OidcUser oidcUser = super.loadUser(userRequest);
 
-        if (!"google".equals(request.getClientRegistration().getRegistrationId())) {
+        if (!"google".equals(userRequest.getClientRegistration().getRegistrationId())) {
             throw new OAuth2AuthenticationException("Proveedor OAuth2 no soportado");
         }
 
-        return processGoogleUser(oAuth2User);
+        return processGoogleUser(oidcUser);
     }
 
-    private OAuth2User processGoogleUser(OAuth2User oAuth2User) {
-        String email     = oAuth2User.getAttribute("email");
-        String name      = oAuth2User.getAttribute("name");
-        String googleSub = oAuth2User.getAttribute("sub");
+    private OidcUser processGoogleUser(OidcUser oidcUser) {
+        String email     = oidcUser.getEmail();
+        String name      = oidcUser.getFullName();
+        String googleSub = oidcUser.getSubject();
 
         if (email == null) throw new AuthException("No se pudo obtener el email desde Google");
 
@@ -53,7 +54,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 .orElseGet(() -> createNew(email, name, googleSub));
 
         userRepository.save(user);
-        return new OAuth2UserAdapter(user, oAuth2User.getAttributes());
+        
+        // Devolver OAuth2UserAdapter que envuelve el User entity + atributos OIDC
+        return new OAuth2UserAdapter(user, oidcUser.getAttributes());
     }
 
     private User updateExisting(User user, String name, String providerId) {

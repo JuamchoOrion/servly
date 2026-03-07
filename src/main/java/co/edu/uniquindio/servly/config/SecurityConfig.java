@@ -141,7 +141,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(e -> e.userService(oAuth2UserService))
+                        .userInfoEndpoint(e -> e.oidcUserService(oAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler(oAuth2FailureHandler)
                         .authorizationEndpoint(auth -> auth
