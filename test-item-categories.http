@@ -1,0 +1,289 @@
+### Variables
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzI5MjQ5MDgsImV4cCI6MTc3MzAxMTMwOH0.lhipzNrn20fkMTJs1uZiKNusVhD-4m1EQBzZJ37dlgoHvo8SaCR4mbAxly3wdSXLRKPren6iGDIWcQumNPHawQ
+@categoryId = 1
+
+### SOFT DELETE IMPLEMENTADO
+### Las categorías eliminadas se marcan como deleted=true pero se conservan en la BD
+### Solo se retornan categorías con deleted=false en las consultas GET
+
+###
+### 1. CREAR CATEGORÍA - ALIMENTOS
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Alimentos",
+  "description": "Categoría para alimentos perecederos"
+}
+
+###
+### 2. CREAR CATEGORÍA - LIMPIEZA
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Limpieza",
+  "description": "Productos de limpieza y desinfección"
+}
+
+###
+### 3. CREAR CATEGORÍA - OFICINA
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Oficina",
+  "description": "Artículos de oficina y papelería"
+}
+
+###
+### 4. CREAR CATEGORÍA - SIN DESCRIPCIÓN (OPCIONAL)
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Bebidas"
+}
+
+###
+### 5. INTENTAR CREAR CON NOMBRE DUPLICADO (DEBE FALLAR)
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Alimentos",
+  "description": "Intento de crear duplicado"
+}
+
+###
+### 6. INTENTAR CREAR SIN TOKEN (DEBE FALLAR)
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+
+{
+  "name": "Sin Autenticación",
+  "description": "Esta petición debe fallar"
+}
+
+###
+### 7. INTENTAR CREAR CON NOMBRE VACÍO (DEBE FALLAR)
+###
+POST {{baseUrl}}/api/item-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "",
+  "description": "Nombre vacío"
+}
+
+###
+### 8. OBTENER TODAS LAS CATEGORÍAS
+###
+GET {{baseUrl}}/api/item-categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+### 9. OBTENER CATEGORÍA POR ID - ID 1
+###
+GET {{baseUrl}}/api/item-categories/6
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+### 10. OBTENER CATEGORÍA POR ID - ID 2
+###
+GET {{baseUrl}}/api/item-categories/2
+Content-Type: application/json
+
+###
+### 11. OBTENER CATEGORÍA POR ID - ID 3
+###
+GET {{baseUrl}}/api/item-categories/6
+Content-Type: application/json
+
+###
+### 12. OBTENER CATEGORÍA POR ID INEXISTENTE (DEBE FALLAR)
+###
+GET {{baseUrl}}/api/item-categories/999
+Content-Type: application/json
+
+###
+### 13. ACTUALIZAR CATEGORÍA - ID 1
+###
+PUT {{baseUrl}}/api/item-categories/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Alimentos Premium",
+  "description": "Categoría para alimentos perecederos de alta calidad"
+}
+
+###
+### 14. ACTUALIZAR CATEGORÍA - ID 2
+###
+PUT {{baseUrl}}/api/item-categories/2
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Limpieza Profunda",
+  "description": "Productos para limpieza profunda"
+}
+
+###
+### 15. INTENTAR ACTUALIZAR CON NOMBRE QUE YA EXISTE (DEBE FALLAR)
+###
+PUT {{baseUrl}}/api/item-categories/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Limpieza Profunda",
+  "description": "Intento de cambiar a nombre existente"
+}
+
+###
+### 16. INTENTAR ACTUALIZAR SIN TOKEN (DEBE FALLAR)
+###
+PUT {{baseUrl}}/api/item-categories/1
+Content-Type: application/json
+
+{
+  "name": "Sin Token",
+  "description": "Esta petición debe fallar"
+}
+
+###
+### 17. INTENTAR ACTUALIZAR CATEGORÍA INEXISTENTE (DEBE FALLAR)
+###
+PUT {{baseUrl}}/api/item-categories/999
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "No Existe",
+  "description": "Esta categoría no existe"
+}
+
+###
+### 18. TOGGLE (ACTIVAR/DESACTIVAR) - ID 1
+###
+PATCH {{baseUrl}}/api/item-categories/1/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+### 19. TOGGLE (ACTIVAR/DESACTIVAR) - ID 2
+###
+PATCH {{baseUrl}}/api/item-categories/2/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+### 20. TOGGLE (ACTIVAR/DESACTIVAR) - ID 3
+###
+PATCH {{baseUrl}}/api/item-categories/3/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+### 21. TOGGLE NUEVAMENTE - ID 1 (DEBE REACTIVARSE)
+###
+PATCH {{baseUrl}}/api/item-categories/1/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+### 22. INTENTAR TOGGLE SIN TOKEN (DEBE FALLAR)
+###
+PATCH {{baseUrl}}/api/item-categories/1/toggle
+Content-Type: application/json
+
+###
+### 23. INTENTAR TOGGLE CATEGORÍA INEXISTENTE (DEBE FALLAR)
+###
+PATCH {{baseUrl}}/api/item-categories/999/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+### 24. ELIMINAR CATEGORÍA - ID 4 (SIN ITEMS ASOCIADOS)
+###
+DELETE {{baseUrl}}/api/item-categories/6
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+### 25. INTENTAR ELIMINAR CATEGORÍA QUE NO EXISTE (DEBE FALLAR)
+###
+DELETE {{baseUrl}}/api/item-categories/999
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+### 26. INTENTAR ELIMINAR SIN TOKEN (DEBE FALLAR)
+###
+DELETE {{baseUrl}}/api/item-categories/1
+Content-Type: application/json
+
+###
+### 27. OBTENER TODAS LAS CATEGORÍAS (PARA VERIFICAR CAMBIOS)
+###
+GET {{baseUrl}}/api/item-categories
+Content-Type: application/json
+
+###
+### 28. OBTENER CATEGORÍA ID 1 (PARA VERIFICAR ACTUALIZACIÓN)
+###
+GET {{baseUrl}}/api/item-categories/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+### RESUMEN DE PRUEBAS:
+###
+### CREAR (POST):
+### ✓ 1-4: Crear categorías válidas
+### ✗ 5: Duplicado (debe fallar)
+### ✗ 6: Sin autenticación (debe fallar)
+### ✗ 7: Nombre vacío (debe fallar)
+###
+### LEER (GET):
+### ✓ 8-11: Obtener todas y por ID válidos
+### ✗ 12: ID inexistente (debe fallar)
+###
+### ACTUALIZAR (PUT):
+### ✓ 13-14: Actualizar categorías válidas
+### ✗ 15: Nombre duplicado (debe fallar)
+### ✗ 16: Sin autenticación (debe fallar)
+### ✗ 17: ID inexistente (debe fallar)
+###
+### TOGGLE (PATCH):
+### ✓ 18-21: Activar/desactivar categorías
+### ✗ 22: Sin autenticación (debe fallar)
+### ✗ 23: ID inexistente (debe fallar)
+###
+### ELIMINAR (DELETE):
+### ✓ 24: Eliminar categoría sin items
+### ✗ 25: ID inexistente (debe fallar)
+### ✗ 26: Sin autenticación (debe fallar)
+###
+### VERIFICACIÓN FINAL:
+### ✓ 27-28: Verificar cambios en la BD
+###
+
