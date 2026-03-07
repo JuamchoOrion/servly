@@ -1,10 +1,15 @@
 package co.edu.uniquindio.servly.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
-@Data
+@Table(name = "items")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,13 +19,18 @@ public class Item {
     private String name;
 
     private String description;
-    //hacerlo escalable con otra clase puede ser
+
     @Column(nullable = false)
     private String unitOfMeasurement; // kg, unit, liters
 
     private Integer expirationDays;
 
-    // Categoría del ítem (p. ej. alimentos, limpieza, oficina)
     @Column(nullable = false)
-    private String category;
+    @Builder.Default
+    private Boolean active = true;
+
+    // Relación con ItemCategory
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "item_category_id", nullable = false)
+    private ItemCategory itemCategory;
 }
