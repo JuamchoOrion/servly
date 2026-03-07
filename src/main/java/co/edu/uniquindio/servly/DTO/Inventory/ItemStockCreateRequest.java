@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ItemStockCreateRequest {
     private Integer quantity;
-    private String supplier;
+    private Long supplierId;
     private Long itemId;
 }

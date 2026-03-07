@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class ItemStockDTO {
     private Long id;
     private Integer quantity;
-    private String supplier;
+    private SupplierResponse supplier;
     private Long itemId;
     private Long inventoryId;
 }

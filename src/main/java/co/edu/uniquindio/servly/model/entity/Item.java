@@ -19,4 +19,8 @@ public class Item {
     private String unitOfMeasurement; // kg, unit, liters
 
     private Integer expirationDays;
+
+    // Categoría del ítem (p. ej. alimentos, limpieza, oficina)
+    @Column(nullable = false)
+    private String category;
 }

@@ -32,4 +32,7 @@ public class ItemUpdateRequest {
 
     @Min(0)
     private Integer expirationDays;
+
+    @Size(max = 255)
+    private String category;
 }
