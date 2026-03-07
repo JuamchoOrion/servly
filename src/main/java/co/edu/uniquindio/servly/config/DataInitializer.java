@@ -37,6 +37,9 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.admin.name}")
     private String adminName;
 
+    @Value("${app.admin.lastName:Servly}")
+    private String adminLastName;
+
     @Override
     public void run(String... args) {
         createAdminUser();
@@ -48,6 +51,7 @@ public class DataInitializer implements CommandLineRunner {
                     .email(adminEmail)
                     .password(passwordEncoder.encode(adminPassword))
                     .name(adminName)
+                    .lastName(adminLastName)
                     .role(Role.ADMIN)
                     .provider(AuthProvider.LOCAL)
                     .enabled(true)
