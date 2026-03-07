@@ -60,6 +60,7 @@ public class CorsConfig {
                 "Origin",
                 "Access-Control-Request-Method",
                 "Access-Control-Request-Headers"
+
         ));
 
         // ✅ HEADERS EXPUESTOS EN LA RESPUESTA
