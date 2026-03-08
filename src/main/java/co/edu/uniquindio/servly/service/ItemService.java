@@ -3,6 +3,7 @@ package co.edu.uniquindio.servly.service;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemCreateRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemDTO;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemUpdateRequest;
+import co.edu.uniquindio.servly.DTO.Inventory.PaginatedItemResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.model.entity.Item;
 import co.edu.uniquindio.servly.model.entity.ItemCategory;
@@ -10,6 +11,8 @@ import co.edu.uniquindio.servly.repository.ItemCategoryRepository;
 import co.edu.uniquindio.servly.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,28 @@ public class ItemService {
     }
 
     /**
+     * Obtiene todos los items activos con paginación
+     */
+    @Transactional(readOnly = true)
+    public PaginatedItemResponse getAllItemsPaginated(Pageable pageable) {
+        log.info("Obteniendo items paginados - página: {}, tamaño: {}",
+                pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<Item> page = itemRepository.findAllActivePaginated(pageable);
+
+        return PaginatedItemResponse.builder()
+                .content(page.getContent().stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList()))
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .isLast(page.isLast())
+                .build();
+    }
+
+    /**
      * Obtiene un item por ID
      */
     @Transactional(readOnly = true)
@@ -59,6 +84,27 @@ public class ItemService {
     }
 
     /**
+     * Obtiene items por categoría con paginación
+     */
+    @Transactional(readOnly = true)
+    public PaginatedItemResponse getItemsByCategoryPaginated(Long categoryId, Pageable pageable) {
+        log.info("Obteniendo items de categoría {} paginados", categoryId);
+
+        Page<Item> page = itemRepository.findByCategoryIdPaginated(categoryId, pageable);
+
+        return PaginatedItemResponse.builder()
+                .content(page.getContent().stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList()))
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .isLast(page.isLast())
+                .build();
+    }
+
+    /**
      * Busca items por nombre
      */
     @Transactional(readOnly = true)
@@ -67,6 +113,27 @@ public class ItemService {
         return itemRepository.findByNameContaining(name).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Busca items por nombre con paginación
+     */
+    @Transactional(readOnly = true)
+    public PaginatedItemResponse searchItemsPaginated(String name, Pageable pageable) {
+        log.info("Buscando items con nombre: {} - paginado", name);
+
+        Page<Item> page = itemRepository.findByNameContainingPaginated(name, pageable);
+
+        return PaginatedItemResponse.builder()
+                .content(page.getContent().stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList()))
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .isLast(page.isLast())
+                .build();
     }
 
     /**

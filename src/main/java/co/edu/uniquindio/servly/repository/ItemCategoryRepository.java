@@ -1,6 +1,8 @@
 package co.edu.uniquindio.servly.repository;
 
 import co.edu.uniquindio.servly.model.entity.ItemCategory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -28,6 +30,12 @@ public interface ItemCategoryRepository extends JpaRepository<ItemCategory, Long
      */
     @Query("SELECT ic FROM ItemCategory ic WHERE ic.deleted = false")
     List<ItemCategory> findAll();
+
+    /**
+     * Obtiene todas las categorías que no están eliminadas con paginación.
+     */
+    @Query("SELECT ic FROM ItemCategory ic WHERE ic.deleted = false")
+    Page<ItemCategory> findAllPaginated(Pageable pageable);
 
     /**
      * Obtiene una categoría por ID que no esté eliminada.

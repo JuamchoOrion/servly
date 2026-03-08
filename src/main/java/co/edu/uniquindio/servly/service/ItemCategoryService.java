@@ -2,11 +2,14 @@ package co.edu.uniquindio.servly.service;
 
 import co.edu.uniquindio.servly.DTO.Inventory.CreateItemCategoryRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemCategoryResponse;
+import co.edu.uniquindio.servly.DTO.Inventory.PaginatedItemCategoryResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.model.entity.ItemCategory;
 import co.edu.uniquindio.servly.repository.ItemCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +58,28 @@ public class ItemCategoryService {
         return categoryRepository.findAll().stream()
                 .map(ItemCategoryResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtiene todas las categorías de items con paginación.
+     */
+    @Transactional(readOnly = true)
+    public PaginatedItemCategoryResponse getAllCategoriesPaginated(Pageable pageable) {
+        log.info("Obteniendo categorías paginadas - página: {}, tamaño: {}",
+                pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<ItemCategory> page = categoryRepository.findAllPaginated(pageable);
+
+        return PaginatedItemCategoryResponse.builder()
+                .content(page.getContent().stream()
+                        .map(ItemCategoryResponse::from)
+                        .collect(Collectors.toList()))
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .isLast(page.isLast())
+                .build();
     }
 
     /**
