@@ -33,4 +33,9 @@ public class Item {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_category_id", nullable = false)
     private ItemCategory itemCategory;
+
+    // Nuevo campo: ideal stock (no nulleable)
+    @Column(name = "ideal_stock", nullable = false)
+    @Builder.Default
+    private Integer idealStock = 0;
 }

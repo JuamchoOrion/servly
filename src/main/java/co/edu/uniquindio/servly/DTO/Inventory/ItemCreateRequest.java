@@ -18,4 +18,6 @@ public class ItemCreateRequest {
     private String unitOfMeasurement;
     private Integer expirationDays;
     private String category;
+    // Nuevo: idealStock opcional en request (si no se proporciona, se usará 0)
+    private Integer idealStock;
 }

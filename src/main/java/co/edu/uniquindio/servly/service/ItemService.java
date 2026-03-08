@@ -7,14 +7,20 @@ import co.edu.uniquindio.servly.DTO.Inventory.PaginatedItemResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.model.entity.Item;
 import co.edu.uniquindio.servly.model.entity.ItemCategory;
+import co.edu.uniquindio.servly.model.entity.ItemStock;
+import co.edu.uniquindio.servly.model.entity.Inventory;
 import co.edu.uniquindio.servly.repository.ItemCategoryRepository;
 import co.edu.uniquindio.servly.repository.ItemRepository;
+import co.edu.uniquindio.servly.repository.ItemStockRepository;
+import co.edu.uniquindio.servly.repository.InventoryRepository;
+import co.edu.uniquindio.servly.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +33,10 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final ItemCategoryRepository itemCategoryRepository;
+    private final ItemStockRepository itemStockRepository;
+    private final SupplierRepository supplierRepository;
+    private final InventoryRepository inventoryRepository;
+
 
     /**
      * Obtiene todos los items activos
@@ -139,19 +149,13 @@ public class ItemService {
     /**
      * Crea un nuevo item
      */
+    @Transactional
     public ItemDTO createItem(ItemCreateRequest request) {
-        log.info("Creando nuevo item: {}", request.getName());
 
-        // Validar que el nombre no esté vacío
-        if (request.getName() == null || request.getName().trim().isEmpty()) {
-            throw new AuthException("El nombre del item no puede estar vacío");
-        }
-
-        // Obtener la categoría
-        ItemCategory category = itemCategoryRepository.findById(Long.parseLong(request.getCategory()))
+        ItemCategory category = itemCategoryRepository
+                .findById(Long.parseLong(request.getCategory()))
                 .orElseThrow(() -> new AuthException("Categoría no encontrada"));
 
-        // Crear el item
         Item item = Item.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -159,10 +163,29 @@ public class ItemService {
                 .expirationDays(request.getExpirationDays())
                 .itemCategory(category)
                 .active(true)
+                .idealStock(request.getIdealStock() != null ? request.getIdealStock() : 0)
                 .build();
 
-        Item savedItem = itemRepository.save(item);
-        log.info("Item creado exitosamente con ID: {}", savedItem.getId());
+        // Guardar y forzar flush para asegurar generación de ID antes de crear ItemStock
+        Item savedItem = itemRepository.saveAndFlush(item);
+
+        // Obtener o crear inventario principal
+        Inventory inventory = inventoryRepository.findAll()
+                .stream()
+                .findFirst()
+                .orElseGet(() -> inventoryRepository.save(Inventory.builder().build()));
+
+        ItemStock stock = ItemStock.builder()
+                .item(savedItem)
+                .inventory(inventory)
+                .quantity(0)
+                .build();
+
+        itemStockRepository.save(stock);
+
+        log.info("Item creado con ID: {} y ItemStock ID: {} (cantidad: {})",
+                savedItem.getId(), stock.getId(), stock.getQuantity());
+
         return convertToDTO(savedItem);
     }
 
@@ -187,6 +210,11 @@ public class ItemService {
         }
         if (request.getExpirationDays() != null) {
             item.setExpirationDays(request.getExpirationDays());
+        }
+
+        // Actualizar idealStock si se proporciona
+        if (request.getIdealStock() != null) {
+            item.setIdealStock(request.getIdealStock());
         }
 
         // Actualizar categoría si se proporciona
@@ -226,7 +254,7 @@ public class ItemService {
                 .unitOfMeasurement(item.getUnitOfMeasurement())
                 .expirationDays(item.getExpirationDays())
                 .category(item.getItemCategory().getName())
+                .idealStock(item.getIdealStock())
                 .build();
     }
 }
-

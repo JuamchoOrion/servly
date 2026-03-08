@@ -13,9 +13,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ItemStockDTO {
-    private Long id;
+    private Long itemStockId;
+
+    private String name;
+    private String description;
+    private String category;
+
     private Integer quantity;
-    private SupplierResponse supplier;
-    private Long itemId;
-    private Long inventoryId;
+    private String unitOfMeasurement;
+
+    private String supplierName;
+
+    private Integer expirationDays;
+
+    private Integer stockPercent;
 }

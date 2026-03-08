@@ -19,6 +19,6 @@ public class Inventory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "inventory", cascade = CascadeType.MERGE)
     private List<ItemStock> itemStockList;
 }

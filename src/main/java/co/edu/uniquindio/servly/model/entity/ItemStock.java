@@ -22,7 +22,7 @@ public class ItemStock {
     private Integer quantity;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false)
+    @JoinColumn(name = "supplier_id", nullable = true)
     private Supplier supplier;
 
     @ManyToOne

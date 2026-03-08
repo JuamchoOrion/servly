@@ -19,4 +19,5 @@ public class ItemDTO {
     private String unitOfMeasurement; // kg, unit, liters
     private Integer expirationDays;
     private String category;
+    private Integer idealStock;
 }

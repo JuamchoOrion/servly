@@ -19,4 +19,6 @@ public class ItemUpdateRequest {
     private String unitOfMeasurement;
     private Integer expirationDays;
     private String category;
+    // Nuevo: permitir actualizar idealStock
+    private Integer idealStock;
 }
