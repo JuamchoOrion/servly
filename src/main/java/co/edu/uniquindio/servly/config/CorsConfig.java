@@ -52,6 +52,7 @@ public class CorsConfig {
         ));
 
         // ✅ HEADERS PERMITIDOS EN LAS PETICIONES
+        // CRÍTICO: Cookie debe estar permitida para enviar cookies cross-origin
         configuration.setAllowedHeaders(Arrays.asList(
                 "Content-Type",
                 "Authorization",
@@ -59,7 +60,8 @@ public class CorsConfig {
                 "Accept",
                 "Origin",
                 "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
+                "Access-Control-Request-Headers",
+                "Cookie"  // ✅ CRÍTICO: Permitir header Cookie
 
         ));
 
@@ -74,6 +76,7 @@ public class CorsConfig {
         ));
 
         // ✅ PERMITIR CREDENCIALES (cookies, headers de autorización)
+        // CRÍTICO: Debe ser true para enviar cookies cross-origin
         configuration.setAllowCredentials(true);
 
         // ✅ TIEMPO DE CACHÉ PARA PREFLIGHT REQUESTS (en segundos)

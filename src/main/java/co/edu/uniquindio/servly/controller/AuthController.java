@@ -89,6 +89,7 @@ AuthController {
                     "email", authResponse.getEmail(),
                     "name", authResponse.getName(),
                     "role", authResponse.getRole(),
+                    "roles", authResponse.getRoles(),
                     "mustChangePassword", authResponse.isMustChangePassword(),
                     "firstLoginCompleted", authResponse.isFirstLoginCompleted()
             ));

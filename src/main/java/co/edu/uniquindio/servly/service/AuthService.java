@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -281,6 +282,7 @@ public class AuthService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole())
+                .roles(List.of("ROLE_" + user.getRole().name()))  // Formato: ROLE_ADMIN, ROLE_WAITER, etc.
                 .mustChangePassword(user.isMustChangePassword())
                 .firstLoginCompleted(user.isFirstLoginCompleted())
                 .build();
