@@ -2,9 +2,13 @@ package co.edu.uniquindio.servly.controller;
 
 import co.edu.uniquindio.servly.DTO.Inventory.CreateItemCategoryRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemCategoryResponse;
+import co.edu.uniquindio.servly.DTO.Inventory.PaginatedItemCategoryResponse;
 import co.edu.uniquindio.servly.service.ItemCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -73,6 +77,32 @@ public class ItemCategoryController {
     @GetMapping
     public ResponseEntity<List<ItemCategoryResponse>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
+    }
+
+    /**
+     * Obtiene todas las categorías de items con paginación.
+     *
+     * GET /api/item-categories/paginated?page=0&size=10&sort=id,asc
+     *
+     * Parámetros:
+     * - page: Número de página (default: 0)
+     * - size: Items por página (default: 10)
+     * - sort: Campo y dirección (default: id,asc)
+     *
+     * Response: 200 OK
+     * {
+     *   "content": [...],
+     *   "pageNumber": 0,
+     *   "pageSize": 10,
+     *   "totalElements": 50,
+     *   "totalPages": 5,
+     *   "isLast": false
+     * }
+     */
+    @GetMapping("/paginated")
+    public ResponseEntity<PaginatedItemCategoryResponse> getAllCategoriesPaginated(
+            @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(categoryService.getAllCategoriesPaginated(pageable));
     }
 
     /**

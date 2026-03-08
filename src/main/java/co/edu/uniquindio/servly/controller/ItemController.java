@@ -3,10 +3,14 @@ package co.edu.uniquindio.servly.controller;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemCreateRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemDTO;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemUpdateRequest;
+import co.edu.uniquindio.servly.DTO.Inventory.PaginatedItemResponse;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,6 +41,24 @@ public class ItemController {
     }
 
     /**
+     * GET /api/items/paginated
+     * Obtiene todos los items activos con paginación
+     * Parámetros:
+     * - page: número de página (0-indexed, default: 0)
+     * - size: cantidad de items por página (default: 10)
+     * - sort: ordenamiento (ej: "id,desc" o "name,asc")
+     * Acceso: ADMIN, STOREKEEPER
+     */
+    @GetMapping("/paginated")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STOREKEEPER')")
+    public ResponseEntity<PaginatedItemResponse> getAllItemsPaginated(
+            @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        log.info("GET /api/items/paginated - Obteniendo items paginados");
+        PaginatedItemResponse response = itemService.getAllItemsPaginated(pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * GET /api/items/{id}
      * Obtiene un item específico por ID
      * Acceso: ADMIN, STOREKEEPER
@@ -63,6 +85,25 @@ public class ItemController {
     }
 
     /**
+     * GET /api/items/category-paginated/{categoryId}
+     * Obtiene items por categoría con paginación
+     * Parámetros:
+     * - page: número de página (0-indexed, default: 0)
+     * - size: cantidad de items por página (default: 10)
+     * - sort: ordenamiento (ej: "id,desc" o "name,asc")
+     * Acceso: ADMIN, STOREKEEPER
+     */
+    @GetMapping("/category-paginated/{categoryId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STOREKEEPER')")
+    public ResponseEntity<PaginatedItemResponse> getItemsByCategoryPaginated(
+            @PathVariable Long categoryId,
+            @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        log.info("GET /api/items/category-paginated/{} - Obteniendo items por categoría paginados", categoryId);
+        PaginatedItemResponse response = itemService.getItemsByCategoryPaginated(categoryId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * GET /api/items/search?name=...
      * Busca items por nombre
      * Acceso: ADMIN, STOREKEEPER
@@ -73,6 +114,26 @@ public class ItemController {
         log.info("GET /api/items/search?name={} - Buscando items", name);
         List<ItemDTO> items = itemService.searchItems(name);
         return ResponseEntity.ok(items);
+    }
+
+    /**
+     * GET /api/items/search-paginated
+     * Busca items por nombre con paginación
+     * Parámetros:
+     * - name: término de búsqueda
+     * - page: número de página (0-indexed, default: 0)
+     * - size: cantidad de items por página (default: 10)
+     * - sort: ordenamiento (ej: "id,desc" o "name,asc")
+     * Acceso: ADMIN, STOREKEEPER
+     */
+    @GetMapping("/search-paginated")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STOREKEEPER')")
+    public ResponseEntity<PaginatedItemResponse> searchItemsPaginated(
+            @RequestParam String name,
+            @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        log.info("GET /api/items/search-paginated?name={} - Buscando items paginados", name);
+        PaginatedItemResponse response = itemService.searchItemsPaginated(name, pageable);
+        return ResponseEntity.ok(response);
     }
 
     /**
