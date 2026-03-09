@@ -1,0 +1,219 @@
+### ============================================
+### TESTING - FECHA DE EXPIRACIÓN AUTOMÁTICA
+### ============================================
+###
+### Esta es la nueva funcionalidad:
+### La fecha de expiración del lote se calcula automáticamente
+### con base en los expirationDays del item.
+###
+### Fórmula:
+### expiryDate = hoy + Item.expirationDays
+
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzMwMjA0OTUsImV4cCI6MTc3MzEwNjg5NX0.suGwhwZndld0BEzuKH8dXPCO6DeYEtEZgpl1Os6JI_00uVMA9c8gJuv8wpVajDsV6ZaOV38mn0QNchLRcl9Fow
+
+### ============================================
+### PRUEBA 1: SIN PROPORCIONAR expiryDate
+### ============================================
+###
+### El lote se creará con la fecha calculada automáticamente:
+### expiryDate = 8 Marzo 2026 + 7 días = 15 Marzo 2026
+###
+### (Asume que ItemStock ID 2 es Pollo con expirationDays = 7)
+
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 2,
+  "quantity": 50,
+  "supplierId": 1,
+  "batchNumber": "LOTE-POLLO-AUTO-001"
+}
+
+### Respuesta esperada:
+### {
+###   "id": ...,
+###   "batchNumber": "LOTE-POLLO-AUTO-001",
+###   "quantity": 50,
+###   "expiryDate": "2026-03-15",  ← Calculada automáticamente (7 días)
+###   "status": "VIGENTE",
+###   "daysUntilExpiry": 7
+### }
+
+###
+
+### ============================================
+### PRUEBA 2: CON expiryDate PERSONALIZADA
+### ============================================
+###
+### Cuando proporcionas la fecha, se usa esa y NO se calcula automáticamente.
+
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 2,
+  "quantity": 35,
+  "supplierId": 2,
+  "batchNumber": "LOTE-POLLO-CUSTOM-001",
+  "expiryDate": "2026-03-20"
+}
+
+### Respuesta esperada:
+### {
+###   "id": ...,
+###   "batchNumber": "LOTE-POLLO-CUSTOM-001",
+###   "quantity": 35,
+###   "expiryDate": "2026-03-20",  ← Fecha personalizada (usada tal cual)
+###   "status": "VIGENTE",
+###   "daysUntilExpiry": 12
+### }
+
+###
+
+### ============================================
+### PRUEBA 3: ARROZ (365 días de expiración)
+### ============================================
+###
+### ItemStock ID 1 es Arroz con expirationDays = 365
+### Fecha calculada: 8 Marzo 2026 + 365 días = 8 Marzo 2027
+
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 1,
+  "quantity": 100,
+  "supplierId": 1,
+  "batchNumber": "LOTE-ARROZ-LONG-001"
+}
+
+### Respuesta esperada:
+### {
+###   "id": ...,
+###   "batchNumber": "LOTE-ARROZ-LONG-001",
+###   "quantity": 100,
+###   "expiryDate": "2027-03-08",  ← 365 días = 1 año
+###   "status": "VIGENTE",
+###   "daysUntilExpiry": 365
+### }
+
+###
+
+### ============================================
+### PRUEBA 4: LECHE (14 días de expiración)
+### ============================================
+###
+### ItemStock ID 3 es Leche con expirationDays = 14
+### Fecha calculada: 8 Marzo 2026 + 14 días = 22 Marzo 2026
+
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 3,
+  "quantity": 50,
+  "supplierId": 5,
+  "batchNumber": "LOTE-LECHE-SHORT-001"
+}
+
+### Respuesta esperada:
+### {
+###   "id": ...,
+###   "batchNumber": "LOTE-LECHE-SHORT-001",
+###   "quantity": 50,
+###   "expiryDate": "2026-03-22",  ← 14 días
+###   "status": "VIGENTE",
+###   "daysUntilExpiry": 14
+### }
+
+###
+
+### ============================================
+### VERIFICAR: OBTENER TODOS LOS LOTES
+### ============================================
+
+GET {{baseUrl}}/api/stock-batch/item-stock/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Respuesta esperada:
+### Array de lotes del Pollo (ItemStock ID 2)
+### Verifica que expiryDate sea: 15/Mar (automática) y 20/Mar (personalizada)
+
+###
+
+### ============================================
+### COMPARACIÓN DE CÁLCULOS
+### ============================================
+###
+### CASO 1: Pollo (7 días)
+### Entrada: 8 Marzo 2026 + 7 días
+### Resultado: 15 Marzo 2026
+###
+### CASO 2: Arroz (365 días)
+### Entrada: 8 Marzo 2026 + 365 días
+### Resultado: 8 Marzo 2027
+###
+### CASO 3: Leche (14 días)
+### Entrada: 8 Marzo 2026 + 14 días
+### Resultado: 22 Marzo 2026
+###
+### CASO 4: Personalizado
+### Entrada: 20 Marzo 2026 (fijo)
+### Resultado: 20 Marzo 2026 (sin cálculo)
+
+### ============================================
+### LOGS ESPERADOS EN EL SERVIDOR
+### ============================================
+###
+### [StockBatchService] Fecha de expiración calculada automáticamente: 2026-03-15 (7 días desde hoy)
+### [StockBatchService] Lote creado exitosamente con ID: X - Vence: 2026-03-15
+###
+### [StockBatchService] Fecha de expiración calculada automáticamente: 2026-03-22 (14 días desde hoy)
+### [StockBatchService] Lote creado exitosamente con ID: Y - Vence: 2026-03-22
+###
+### [StockBatchService] Fecha de expiración calculada automáticamente: 2027-03-08 (365 días desde hoy)
+### [StockBatchService] Lote creado exitosamente con ID: Z - Vence: 2027-03-08
+
+### ============================================
+### RESUMEN DE CAMBIOS
+### ============================================
+###
+### ✅ ANTES:
+###    Debías proporcionar expiryDate manualmente en cada lote
+###    POST /api/stock-batch
+###    {
+###      "itemStockId": 2,
+###      "quantity": 50,
+###      "supplierId": 1,
+###      "batchNumber": "LOTE-001",
+###      "expiryDate": "2026-03-15"  ← OBLIGATORIO
+###    }
+###
+### ✅ AHORA:
+###    La fecha se calcula automáticamente si no la proporcionas
+###    POST /api/stock-batch
+###    {
+###      "itemStockId": 2,
+###      "quantity": 50,
+###      "supplierId": 1,
+###      "batchNumber": "LOTE-001"
+###      // expiryDate: "2026-03-15"  ← OPCIONAL (se calcula automáticamente)
+###    }
+###
+###    Fórmula: expiryDate = HOY + Item.expirationDays
+###
+### ✅ VENTAJAS:
+###    - Menos errores (no olvidas la fecha)
+###    - Más rápido (no tienes que calcular)
+###    - Consistente (usa siempre los días definidos en el item)
+###    - Flexible (puedes seguir proporcionando fecha si necesitas)
+
+### ============================================
+
