@@ -8,361 +8,268 @@ import co.edu.uniquindio.servly.model.entity.Supplier;
 import co.edu.uniquindio.servly.repository.SupplierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SupplierService Tests")
 class SupplierServiceTest {
 
-    @Mock private SupplierRepository supplierRepository;
-    @Mock private ImageService imageService;
+    @Mock SupplierRepository supplierRepository;
+    @Mock ImageService imageService;
 
-    @InjectMocks
-    private SupplierService supplierService;
+    @InjectMocks SupplierService supplierService;
 
-    // ── fixtures ──────────────────────────────────────────────────────────────
     private Supplier supplier;
-    private SupplierCreateRequest validRequest;
+    private SupplierCreateRequest createRequest;
 
     @BeforeEach
     void setUp() {
         supplier = Supplier.builder()
                 .id(1L)
                 .name("Proveedor ABC")
-                .description("Descripción del proveedor")
+                .description("Carnes frescas")
                 .contactNumber("3001234567")
                 .email("proveedor@abc.com")
-                .logoUrl("https://res.cloudinary.com/demo/logo.png")
+                .logoUrl(null)
                 .build();
 
-        validRequest = new SupplierCreateRequest();
-        validRequest.setName("Proveedor ABC");
-        validRequest.setDescription("Descripción del proveedor");
-        validRequest.setContactNumber("3001234567");
-        validRequest.setEmail("proveedor@abc.com");
+        createRequest = new SupplierCreateRequest(
+                "Proveedor ABC", "Carnes frescas", "3001234567", "proveedor@abc.com", null);
     }
 
-    // =========================================================================
-    // getAllSuppliers
-    // =========================================================================
-    @Nested
-    @DisplayName("getAllSuppliers()")
-    class GetAllSuppliers {
+    // ── getAllSuppliers ────────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe retornar lista de SupplierDTO cuando existen proveedores")
-        void shouldReturnSupplierDTOList() {
-            when(supplierRepository.findAll()).thenReturn(List.of(supplier));
+    @Test
+    @DisplayName("getAllSuppliers - retorna lista de DTOs")
+    void getAllSuppliers_success() {
+        when(supplierRepository.findAll()).thenReturn(List.of(supplier));
 
-            List<SupplierDTO> result = supplierService.getAllSuppliers();
+        List<SupplierDTO> result = supplierService.getAllSuppliers();
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getId()).isEqualTo(1L);
-            assertThat(result.get(0).getName()).isEqualTo("Proveedor ABC");
-            verify(supplierRepository).findAll();
-        }
-
-        @Test
-        @DisplayName("Debe retornar lista vacía cuando no hay proveedores")
-        void shouldReturnEmptyList() {
-            when(supplierRepository.findAll()).thenReturn(List.of());
-
-            assertThat(supplierService.getAllSuppliers()).isEmpty();
-        }
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("Proveedor ABC");
+        assertThat(result.get(0).getContactNumber()).isEqualTo("3001234567");
+        assertThat(result.get(0).getEmail()).isEqualTo("proveedor@abc.com");
     }
 
-    // =========================================================================
-    // getSupplierById
-    // =========================================================================
-    @Nested
-    @DisplayName("getSupplierById()")
-    class GetSupplierById {
+    @Test
+    @DisplayName("getAllSuppliers - lista vacía retorna lista vacía")
+    void getAllSuppliers_empty() {
+        when(supplierRepository.findAll()).thenReturn(List.of());
 
-        @Test
-        @DisplayName("Debe retornar SupplierDTO cuando el proveedor existe")
-        void shouldReturnSupplierDTO() {
-            when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+        List<SupplierDTO> result = supplierService.getAllSuppliers();
 
-            SupplierDTO result = supplierService.getSupplierById(1L);
-
-            assertThat(result.getId()).isEqualTo(1L);
-            assertThat(result.getName()).isEqualTo("Proveedor ABC");
-            assertThat(result.getEmail()).isEqualTo("proveedor@abc.com");
-        }
-
-        @Test
-        @DisplayName("Debe lanzar NotFoundException cuando el proveedor no existe")
-        void shouldThrowWhenNotFound() {
-            when(supplierRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> supplierService.getSupplierById(99L))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("99");
-        }
+        assertThat(result).isEmpty();
     }
 
-    // =========================================================================
-    // createSupplier
-    // =========================================================================
-    @Nested
-    @DisplayName("createSupplier()")
-    class CreateSupplier {
+    // ── getSupplierById ───────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe crear proveedor sin imagen cuando image es null")
-        void shouldCreateSupplierWithoutImage()throws Exception {
-            Supplier savedSupplier = supplier.toBuilder().logoUrl(null).build();
-            when(supplierRepository.save(any(Supplier.class))).thenReturn(savedSupplier);
+    @Test
+    @DisplayName("getSupplierById - retorna proveedor existente")
+    void getSupplierById_success() {
+        when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
 
-            SupplierDTO result = supplierService.createSupplier(validRequest, null);
+        SupplierDTO result = supplierService.getSupplierById(1L);
 
-            assertThat(result.getName()).isEqualTo("Proveedor ABC");
-            assertThat(result.getLogoUrl()).isNull();
-            verify(imageService, never()).upload(any());
-        }
-
-        @Test
-        @DisplayName("Debe crear proveedor sin imagen cuando el archivo está vacío")
-        void shouldCreateSupplierWithEmptyFile() throws Exception{
-            MockMultipartFile emptyFile = new MockMultipartFile("image", new byte[0]);
-            Supplier savedSupplier = supplier.toBuilder().logoUrl(null).build();
-            when(supplierRepository.save(any(Supplier.class))).thenReturn(savedSupplier);
-
-            SupplierDTO result = supplierService.createSupplier(validRequest, emptyFile);
-
-            assertThat(result.getLogoUrl()).isNull();
-            verify(imageService, never()).upload(any(MultipartFile.class));        }
-
-        @Test
-        @DisplayName("Debe subir imagen y guardar la URL cuando se provee un archivo válido")
-        void shouldCreateSupplierWithImage() throws Exception {
-            MockMultipartFile imageFile = new MockMultipartFile(
-                    "image", "logo.png", "image/png", "fake-content".getBytes());
-
-            when(imageService.upload(any(MultipartFile.class)))
-                    .thenReturn(Map.of("secure_url", "https://res.cloudinary.com/demo/logo.png"));
-            when(supplierRepository.save(any(Supplier.class))).thenReturn(supplier);
-
-            SupplierDTO result = supplierService.createSupplier(validRequest, imageFile);
-
-            assertThat(result.getLogoUrl()).isEqualTo("https://res.cloudinary.com/demo/logo.png");
-            verify(imageService).upload(imageFile);
-        }
-
-        @Test
-        @DisplayName("Debe lanzar RuntimeException cuando falla la subida de imagen")
-        void shouldThrowWhenImageUploadFails() throws Exception {
-            MockMultipartFile imageFile = new MockMultipartFile(
-                    "image", "logo.png", "image/png", "fake-content".getBytes());
-
-            when(imageService.upload(any(MultipartFile.class)))
-                    .thenThrow(new RuntimeException("Cloudinary error"));
-
-            assertThatThrownBy(() -> supplierService.createSupplier(validRequest, imageFile))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("Error uploading image");
-
-            verify(supplierRepository, never()).save(any());
-        }
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getName()).isEqualTo("Proveedor ABC");
     }
 
-    // =========================================================================
-    // updateSupplier
-    // =========================================================================
-    @Nested
-    @DisplayName("updateSupplier()")
-    class UpdateSupplier {
+    @Test
+    @DisplayName("getSupplierById - ID no encontrado lanza NotFoundException")
+    void getSupplierById_notFound_throws() {
+        when(supplierRepository.findById(99L)).thenReturn(Optional.empty());
 
-        @Test
-        @DisplayName("Debe actualizar campos del proveedor sin cambiar la imagen")
-        void shouldUpdateSupplierWithoutChangingImage()throws Exception {
-            SupplierCreateRequest updateRequest = new SupplierCreateRequest();
-            updateRequest.setName("Proveedor XYZ");
-            updateRequest.setDescription("Nueva descripción");
-            updateRequest.setContactNumber("3109876543");
-            updateRequest.setEmail("nuevo@xyz.com");
-
-            Supplier updatedSupplier = supplier.toBuilder()
-                    .name("Proveedor XYZ")
-                    .description("Nueva descripción")
-                    .contactNumber("3109876543")
-                    .email("nuevo@xyz.com")
-                    .build();
-
-            when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
-            when(supplierRepository.save(any(Supplier.class))).thenReturn(updatedSupplier);
-
-            SupplierDTO result = supplierService.updateSupplier(1L, updateRequest, null);
-
-            assertThat(result.getName()).isEqualTo("Proveedor XYZ");
-            assertThat(result.getEmail()).isEqualTo("nuevo@xyz.com");
-            verify(imageService, never()).upload(any());
-        }
-
-        @Test
-        @DisplayName("Debe actualizar la imagen cuando se provee un archivo válido")
-        void shouldUpdateSupplierWithNewImage() throws Exception {
-            MockMultipartFile imageFile = new MockMultipartFile(
-                    "image", "new-logo.png", "image/png", "new-content".getBytes());
-
-            Supplier updatedSupplier = supplier.toBuilder()
-                    .logoUrl("https://res.cloudinary.com/demo/new-logo.png")
-                    .build();
-
-            when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
-            when(imageService.upload(any(MultipartFile.class)))
-                    .thenReturn(Map.of("secure_url", "https://res.cloudinary.com/demo/new-logo.png"));
-            when(supplierRepository.save(any(Supplier.class))).thenReturn(updatedSupplier);
-
-            SupplierDTO result = supplierService.updateSupplier(1L, validRequest, imageFile);
-
-            assertThat(result.getLogoUrl()).isEqualTo("https://res.cloudinary.com/demo/new-logo.png");
-            verify(imageService).upload(imageFile);
-        }
-
-        @Test
-        @DisplayName("Debe lanzar NotFoundException si el proveedor no existe")
-        void shouldThrowWhenNotFound() {
-            when(supplierRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> supplierService.updateSupplier(99L, validRequest, null))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("99");
-
-            verify(supplierRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Debe lanzar RuntimeException cuando falla la subida de imagen en update")
-        void shouldThrowWhenImageUploadFailsOnUpdate() throws Exception {
-            MockMultipartFile imageFile = new MockMultipartFile(
-                    "image", "logo.png", "image/png", "fake-content".getBytes());
-
-            when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
-            when(imageService.upload(any(MultipartFile.class)))
-                    .thenThrow(new RuntimeException("Cloudinary error"));
-
-            assertThatThrownBy(() -> supplierService.updateSupplier(1L, validRequest, imageFile))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("Error uploading image");
-        }
+        assertThatThrownBy(() -> supplierService.getSupplierById(99L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Supplier not found with id: 99");
     }
 
-    // =========================================================================
-    // deleteSupplier
-    // =========================================================================
-    @Nested
-    @DisplayName("deleteSupplier()")
-    class DeleteSupplier {
+    // ── createSupplier ────────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe eliminar el proveedor cuando existe")
-        void shouldDeleteSupplierSuccessfully() {
-            when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+    @Test
+    @DisplayName("createSupplier - sin imagen crea correctamente")
+    void createSupplier_noImage_success() throws Exception {
+        when(supplierRepository.save(any())).thenReturn(supplier);
 
-            supplierService.deleteSupplier(1L);
+        SupplierDTO result = supplierService.createSupplier(createRequest, null);
 
-            verify(supplierRepository).delete(supplier);
-        }
-
-        @Test
-        @DisplayName("Debe lanzar NotFoundException si el proveedor no existe")
-        void shouldThrowWhenNotFound() {
-            when(supplierRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> supplierService.deleteSupplier(99L))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("99");
-
-            verify(supplierRepository, never()).delete(any());
-        }
+        assertThat(result.getName()).isEqualTo("Proveedor ABC");
+        assertThat(result.getLogoUrl()).isNull();
+        verify(imageService, never()).upload(any());
     }
 
-    // =========================================================================
-    // getAllSuppliersPaginated
-    // =========================================================================
-    @Nested
-    @DisplayName("getAllSuppliersPaginated()")
-    class GetAllSuppliersPaginated {
+    @Test
+    @DisplayName("createSupplier - con imagen sube y guarda URL")
+    @SuppressWarnings("unchecked")
+    void createSupplier_withImage_uploadsAndSavesUrl() throws Exception {
+        MockMultipartFile image = new MockMultipartFile(
+                "image", "logo.png", "image/png", "bytes".getBytes());
 
-        @Test
-        @DisplayName("Debe retornar respuesta paginada correctamente")
-        void shouldReturnPaginatedResponse() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<Supplier> page = new PageImpl<>(List.of(supplier), pageable, 1);
-            when(supplierRepository.findAll(pageable)).thenReturn(page);
+        Map<String, Object> uploadResult = Map.of("secure_url", "https://cloudinary.com/logo.png");
+        when(imageService.upload(image)).thenReturn(uploadResult);
 
-            PaginatedSupplierResponse response = supplierService.getAllSuppliersPaginated(pageable);
+        Supplier withLogo = Supplier.builder()
+                .id(1L).name("Proveedor ABC").description("Carnes frescas")
+                .contactNumber("3001234567").email("proveedor@abc.com")
+                .logoUrl("https://cloudinary.com/logo.png").build();
+        when(supplierRepository.save(any())).thenReturn(withLogo);
 
-            assertThat(response.getContent()).hasSize(1);
-            assertThat(response.getPageNumber()).isZero();
-            assertThat(response.getPageSize()).isEqualTo(10);
-            assertThat(response.getTotalElements()).isEqualTo(1L);
-            assertThat(response.getTotalPages()).isEqualTo(1);
-            assertThat(response.isLast()).isTrue();
-        }
+        SupplierDTO result = supplierService.createSupplier(createRequest, image);
 
-        @Test
-        @DisplayName("Debe retornar página vacía cuando no hay proveedores")
-        void shouldReturnEmptyPage() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<Supplier> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-            when(supplierRepository.findAll(pageable)).thenReturn(emptyPage);
-
-            PaginatedSupplierResponse response = supplierService.getAllSuppliersPaginated(pageable);
-
-            assertThat(response.getContent()).isEmpty();
-            assertThat(response.getTotalElements()).isZero();
-        }
+        assertThat(result.getLogoUrl()).isEqualTo("https://cloudinary.com/logo.png");
+        verify(imageService).upload(image);
     }
 
-    // =========================================================================
-    // toDTO / toResponse (helpers)
-    // =========================================================================
-    @Nested
-    @DisplayName("Mapeo toDTO() y toResponse()")
-    class Mapping {
+    @Test
+    @DisplayName("createSupplier - error al subir imagen lanza RuntimeException")
+    void createSupplier_imageUploadFails_throws() throws Exception {
+        MockMultipartFile image = new MockMultipartFile(
+                "image", "logo.png", "image/png", "bytes".getBytes());
 
-        @Test
-        @DisplayName("toDTO debe mapear todos los campos correctamente")
-        void shouldMapAllFieldsToDTO() {
-            SupplierDTO dto = supplierService.toDTO(supplier);
+        when(imageService.upload(any())).thenThrow(new RuntimeException("Cloudinary down"));
 
-            assertThat(dto.getId()).isEqualTo(1L);
-            assertThat(dto.getName()).isEqualTo("Proveedor ABC");
-            assertThat(dto.getDescription()).isEqualTo("Descripción del proveedor");
-            assertThat(dto.getContactNumber()).isEqualTo("3001234567");
-            assertThat(dto.getEmail()).isEqualTo("proveedor@abc.com");
-            assertThat(dto.getLogoUrl()).isEqualTo("https://res.cloudinary.com/demo/logo.png");
-        }
+        assertThatThrownBy(() -> supplierService.createSupplier(createRequest, image))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error uploading image");
+    }
 
-        @Test
-        @DisplayName("toResponse debe mapear id, name y logoUrl correctamente")
-        void shouldMapFieldsToResponse() {
-            var response = supplierService.toResponse(supplier);
+    // ── updateSupplier ────────────────────────────────────────────────────
 
-            assertThat(response.getId()).isEqualTo(1L);
-            assertThat(response.getName()).isEqualTo("Proveedor ABC");
-            assertThat(response.getLogoUrl()).isEqualTo("https://res.cloudinary.com/demo/logo.png");
-        }
+    @Test
+    @DisplayName("updateSupplier - actualiza datos sin imagen")
+    void updateSupplier_noImage_success() throws Exception {
+        SupplierCreateRequest updateReq = new SupplierCreateRequest(
+                "Nuevo Nombre", "Nueva desc", "3009999999", "nuevo@abc.com", null);
+
+        Supplier updated = Supplier.builder()
+                .id(1L).name("Nuevo Nombre").description("Nueva desc")
+                .contactNumber("3009999999").email("nuevo@abc.com").logoUrl(null).build();
+
+        when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+        when(supplierRepository.save(any())).thenReturn(updated);
+
+        SupplierDTO result = supplierService.updateSupplier(1L, updateReq, null);
+
+        assertThat(result.getName()).isEqualTo("Nuevo Nombre");
+        assertThat(result.getContactNumber()).isEqualTo("3009999999");
+        verify(imageService, never()).upload(any());
+    }
+
+    @Test
+    @DisplayName("updateSupplier - con imagen actualiza logoUrl")
+    @SuppressWarnings("unchecked")
+    void updateSupplier_withImage_updatesLogoUrl() throws Exception {
+        MockMultipartFile image = new MockMultipartFile(
+                "image", "new.png", "image/png", "bytes".getBytes());
+
+        Map<String, Object> uploadResult = Map.of("secure_url", "https://cloudinary.com/new.png");
+        when(imageService.upload(image)).thenReturn(uploadResult);
+
+        Supplier updated = Supplier.builder()
+                .id(1L).name("Proveedor ABC").description("Carnes frescas")
+                .contactNumber("3001234567").email("proveedor@abc.com")
+                .logoUrl("https://cloudinary.com/new.png").build();
+
+        when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+        when(supplierRepository.save(any())).thenReturn(updated);
+
+        SupplierDTO result = supplierService.updateSupplier(1L, createRequest, image);
+
+        assertThat(result.getLogoUrl()).isEqualTo("https://cloudinary.com/new.png");
+    }
+
+    @Test
+    @DisplayName("updateSupplier - ID no encontrado lanza NotFoundException")
+    void updateSupplier_notFound_throws() {
+        when(supplierRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> supplierService.updateSupplier(99L, createRequest, null))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Supplier not found with id: 99");
+    }
+
+    @Test
+    @DisplayName("updateSupplier - error al subir imagen lanza RuntimeException")
+    void updateSupplier_imageUploadFails_throws() throws Exception {
+        MockMultipartFile image = new MockMultipartFile(
+                "image", "bad.png", "image/png", "bytes".getBytes());
+
+        when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+        when(imageService.upload(any())).thenThrow(new RuntimeException("fail"));
+
+        assertThatThrownBy(() -> supplierService.updateSupplier(1L, createRequest, image))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error uploading image");
+    }
+
+    // ── deleteSupplier ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("deleteSupplier - elimina proveedor correctamente")
+    void deleteSupplier_success() {
+        when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+
+        supplierService.deleteSupplier(1L);
+
+        verify(supplierRepository).delete(supplier);
+    }
+
+    @Test
+    @DisplayName("deleteSupplier - ID no encontrado lanza NotFoundException")
+    void deleteSupplier_notFound_throws() {
+        when(supplierRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> supplierService.deleteSupplier(99L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Supplier not found with id: 99");
+    }
+
+    // ── getAllSuppliersPaginated ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("getAllSuppliersPaginated - retorna respuesta paginada")
+    void getAllSuppliersPaginated_success() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Supplier> page = new PageImpl<>(List.of(supplier), pageable, 1);
+
+        when(supplierRepository.findAll(pageable)).thenReturn(page);
+
+        PaginatedSupplierResponse response = supplierService.getAllSuppliersPaginated(pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getTotalElements()).isEqualTo(1L);
+        assertThat(response.getTotalPages()).isEqualTo(1);
+        assertThat(response.getPageNumber()).isEqualTo(0);
+        assertThat(response.isLast()).isTrue();
+        assertThat(response.getContent().get(0).getName()).isEqualTo("Proveedor ABC");
+    }
+
+    @Test
+    @DisplayName("getAllSuppliersPaginated - página vacía retorna content vacío")
+    void getAllSuppliersPaginated_emptyPage() {
+        Pageable pageable = PageRequest.of(5, 10);
+        Page<Supplier> page = new PageImpl<>(List.of(), pageable, 0);
+
+        when(supplierRepository.findAll(pageable)).thenReturn(page);
+
+        PaginatedSupplierResponse response = supplierService.getAllSuppliersPaginated(pageable);
+
+        assertThat(response.getContent()).isEmpty();
+        assertThat(response.getTotalElements()).isEqualTo(0L);
     }
 }

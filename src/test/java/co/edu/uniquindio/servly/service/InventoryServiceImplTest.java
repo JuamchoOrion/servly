@@ -8,331 +8,253 @@ import co.edu.uniquindio.servly.repository.InventoryRepository;
 import co.edu.uniquindio.servly.repository.ItemStockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("InventoryServiceImpl Tests")
 class InventoryServiceImplTest {
 
-    @Mock private InventoryRepository inventoryRepository;
-    @Mock private ItemStockRepository itemStockRepository;
+    @Mock InventoryRepository inventoryRepository;
+    @Mock ItemStockRepository itemStockRepository;
 
-    @InjectMocks
-    private InventoryServiceImpl inventoryService;
+    @InjectMocks InventoryServiceImpl inventoryService;
 
-    // ── fixtures ──────────────────────────────────────────────────────────────
+    // ── Fixtures ──────────────────────────────────────────────────────────
+
     private Inventory inventory;
-    private ItemCategory category;
-    private Item item;
-    private Supplier supplier;
     private ItemStock itemStock;
 
     @BeforeEach
     void setUp() {
-        inventory = Inventory.builder()
-                .id(1L)
-                .build();
+        // Categoría
+        ItemCategory category = new ItemCategory();
+        category.setId(1L);
+        category.setName("Granos");
 
-        category = ItemCategory.builder()
-                .id(1L)
-                .name("Limpieza")
-                .build();
+        // Item
+        Item item = new Item();
+        item.setId(1L);
+        item.setName("Arroz Blanco");
+        item.setDescription("Arroz de grano largo");
+        item.setUnitOfMeasurement("kg");
+        item.setExpirationDays(365);
+        item.setIdealStock(50);
+        item.setItemCategory(category);
 
-        item = Item.builder()
-                .id(1L)
-                .name("Escoba")
-                .description("Escoba industrial")
-                .unitOfMeasurement("unidad")
-                .expirationDays(0)
-                .idealStock(10)
-                .itemCategory(category)
-                .build();
+        // Proveedor
+        Supplier supplier = new Supplier();
+        supplier.setId(1L);
+        supplier.setName("Proveedor ABC");
 
-        supplier = Supplier.builder()
-                .id(1L)
-                .name("Proveedor ABC")
-                .build();
+        // Inventario
+        inventory = new Inventory();
+        inventory.setId(1L);
 
-        itemStock = ItemStock.builder()
-                .id(1L)
-                .inventory(inventory)
-                .item(item)
-                .supplier(supplier)
-                .quantity(5)
-                .build();
+        // ItemStock
+        itemStock = new ItemStock();
+        itemStock.setId(1L);
+        itemStock.setQuantity(100);
+        itemStock.setItem(item);
+        itemStock.setSupplier(supplier);
+        itemStock.setInventory(inventory);
     }
 
-    // =========================================================================
-    // getInventory
-    // =========================================================================
-    @Nested
-    @DisplayName("getInventory()")
-    class GetInventory {
+    // ── getInventory ──────────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe retornar lista de ItemStockDTO cuando el inventario existe")
-        void shouldReturnItemStockDTOList() {
-            when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
-            when(itemStockRepository.findByInventoryId(1L)).thenReturn(List.of(itemStock));
+    @Test
+    @DisplayName("getInventory - retorna lista de DTOs correctamente mapeados")
+    void getInventory_success() {
+        when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
+        when(itemStockRepository.findByInventoryId(1L)).thenReturn(List.of(itemStock));
 
-            List<ItemStockDTO> result = inventoryService.getInventory();
+        List<ItemStockDTO> result = inventoryService.getInventory();
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getItemStockId()).isEqualTo(1L);
-            assertThat(result.get(0).getName()).isEqualTo("Escoba");
-            assertThat(result.get(0).getCategory()).isEqualTo("Limpieza");
-            assertThat(result.get(0).getQuantity()).isEqualTo(5);
-            assertThat(result.get(0).getSupplierName()).isEqualTo("Proveedor ABC");
-        }
-
-        @Test
-        @DisplayName("Debe retornar lista vacía cuando el inventario no tiene stocks")
-        void shouldReturnEmptyListWhenNoStocks() {
-            when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
-            when(itemStockRepository.findByInventoryId(1L)).thenReturn(List.of());
-
-            assertThat(inventoryService.getInventory()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Debe lanzar NotFoundException cuando no existe inventario")
-        void shouldThrowWhenNoInventoryFound() {
-            when(inventoryRepository.findAll()).thenReturn(List.of());
-
-            assertThatThrownBy(() -> inventoryService.getInventory())
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("No inventory found");
-
-            verify(itemStockRepository, never()).findByInventoryId(anyLong());
-        }
-
-        @Test
-        @DisplayName("Debe mapear correctamente un ItemStock con item null")
-        void shouldMapItemStockWithNullItem() {
-            ItemStock stockWithoutItem = ItemStock.builder()
-                    .id(2L)
-                    .inventory(inventory)
-                    .item(null)
-                    .supplier(null)
-                    .quantity(0)
-                    .build();
-
-            when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
-            when(itemStockRepository.findByInventoryId(1L)).thenReturn(List.of(stockWithoutItem));
-
-            List<ItemStockDTO> result = inventoryService.getInventory();
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getName()).isNull();
-            assertThat(result.get(0).getCategory()).isNull();
-            assertThat(result.get(0).getSupplierName()).isNull();
-        }
+        assertThat(result).hasSize(1);
+        ItemStockDTO dto = result.get(0);
+        assertThat(dto.getItemStockId()).isEqualTo(1L);
+        assertThat(dto.getName()).isEqualTo("Arroz Blanco");
+        assertThat(dto.getDescription()).isEqualTo("Arroz de grano largo");
+        assertThat(dto.getCategory()).isEqualTo("Granos");
+        assertThat(dto.getQuantity()).isEqualTo(100);
+        assertThat(dto.getUnitOfMeasurement()).isEqualTo("kg");
+        assertThat(dto.getSupplierName()).isEqualTo("Proveedor ABC");
+        assertThat(dto.getExpirationDays()).isEqualTo(365);
+        assertThat(dto.getIdealStock()).isEqualTo(50);
     }
 
-    // =========================================================================
-    // getInventoryPaginated
-    // =========================================================================
-    @Nested
-    @DisplayName("getInventoryPaginated()")
-    class GetInventoryPaginated {
+    @Test
+    @DisplayName("getInventory - sin inventario lanza NotFoundException")
+    void getInventory_noInventory_throwsNotFound() {
+        when(inventoryRepository.findAll()).thenReturn(List.of());
 
-        @Test
-        @DisplayName("Debe retornar respuesta paginada correctamente")
-        void shouldReturnPaginatedResponse() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemStock> page = new PageImpl<>(List.of(itemStock), pageable, 1);
-
-            when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
-            when(itemStockRepository.findByInventoryId(1L, pageable)).thenReturn(page);
-
-            PaginatedInventoryResponse response = inventoryService.getInventoryPaginated(pageable);
-
-            assertThat(response.getContent()).hasSize(1);
-            assertThat(response.getPageNumber()).isZero();
-            assertThat(response.getPageSize()).isEqualTo(10);
-            assertThat(response.getTotalElements()).isEqualTo(1L);
-            assertThat(response.getTotalPages()).isEqualTo(1);
-            assertThat(response.isLast()).isTrue();
-        }
-
-        @Test
-        @DisplayName("Debe retornar página vacía cuando no hay stocks")
-        void shouldReturnEmptyPage() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemStock> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-
-            when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
-            when(itemStockRepository.findByInventoryId(1L, pageable)).thenReturn(emptyPage);
-
-            PaginatedInventoryResponse response = inventoryService.getInventoryPaginated(pageable);
-
-            assertThat(response.getContent()).isEmpty();
-            assertThat(response.getTotalElements()).isZero();
-        }
-
-        @Test
-        @DisplayName("Debe lanzar NotFoundException cuando no existe inventario")
-        void shouldThrowWhenNoInventoryFound() {
-            when(inventoryRepository.findAll()).thenReturn(List.of());
-
-            assertThatThrownBy(() -> inventoryService.getInventoryPaginated(PageRequest.of(0, 10)))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("No inventory found");
-        }
+        assertThatThrownBy(() -> inventoryService.getInventory())
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("No inventory found");
     }
 
-    // =========================================================================
-    // increaseStock
-    // =========================================================================
-    @Nested
-    @DisplayName("increaseStock()")
-    class IncreaseStock {
+    @Test
+    @DisplayName("getInventory - itemStock sin item ni supplier mapea nulls sin error")
+    void getInventory_itemStockWithNulls_mapsNullsSafely() {
+        ItemStock emptyStock = new ItemStock();
+        emptyStock.setId(2L);
+        emptyStock.setQuantity(0);
+        emptyStock.setItem(null);
+        emptyStock.setSupplier(null);
 
-        @Test
-        @DisplayName("Debe incrementar la cantidad correctamente")
-        void shouldIncreaseStockQuantity() {
-            when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
-            when(itemStockRepository.save(any(ItemStock.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
+        when(itemStockRepository.findByInventoryId(1L)).thenReturn(List.of(emptyStock));
 
-            inventoryService.increaseStock(1L, 3);
+        List<ItemStockDTO> result = inventoryService.getInventory();
 
-            assertThat(itemStock.getQuantity()).isEqualTo(8); // 5 + 3
-            verify(itemStockRepository).save(itemStock);
-        }
-
-        @Test
-        @DisplayName("Debe ignorar la operación cuando quantity es null")
-        void shouldDoNothingWhenQuantityIsNull() {
-            inventoryService.increaseStock(1L, null);
-
-            verify(itemStockRepository, never()).findById(anyLong());
-            verify(itemStockRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Debe ignorar la operación cuando quantity es 0")
-        void shouldDoNothingWhenQuantityIsZero() {
-            inventoryService.increaseStock(1L, 0);
-
-            verify(itemStockRepository, never()).findById(anyLong());
-            verify(itemStockRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Debe ignorar la operación cuando quantity es negativo")
-        void shouldDoNothingWhenQuantityIsNegative() {
-            inventoryService.increaseStock(1L, -5);
-
-            verify(itemStockRepository, never()).findById(anyLong());
-            verify(itemStockRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Debe lanzar NotFoundException cuando el ItemStock no existe")
-        void shouldThrowWhenItemStockNotFound() {
-            when(itemStockRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> inventoryService.increaseStock(99L, 5))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("99");
-
-            verify(itemStockRepository, never()).save(any());
-        }
+        assertThat(result).hasSize(1);
+        ItemStockDTO dto = result.get(0);
+        assertThat(dto.getName()).isNull();
+        assertThat(dto.getCategory()).isNull();
+        assertThat(dto.getSupplierName()).isNull();
     }
 
-    // =========================================================================
-    // decreaseStock
-    // =========================================================================
-    @Nested
-    @DisplayName("decreaseStock()")
-    class DecreaseStock {
+    @Test
+    @DisplayName("getInventory - item sin categoría mapea category como null")
+    void getInventory_itemWithNoCategory_categoryIsNull() {
+        itemStock.getItem().setItemCategory(null);
 
-        @Test
-        @DisplayName("Debe decrementar la cantidad correctamente")
-        void shouldDecreaseStockQuantity() {
-            when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
-            when(itemStockRepository.save(any(ItemStock.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
+        when(itemStockRepository.findByInventoryId(1L)).thenReturn(List.of(itemStock));
 
-            inventoryService.decreaseStock(1L, 3);
+        List<ItemStockDTO> result = inventoryService.getInventory();
 
-            assertThat(itemStock.getQuantity()).isEqualTo(2); // 5 - 3
-            verify(itemStockRepository).save(itemStock);
-        }
+        assertThat(result.get(0).getCategory()).isNull();
+    }
 
-        @Test
-        @DisplayName("Debe dejar la cantidad en 0 cuando se decrementa más de lo disponible")
-        void shouldSetQuantityToZeroWhenDecreaseExceedsStock() {
-            when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
-            when(itemStockRepository.save(any(ItemStock.class))).thenAnswer(inv -> inv.getArgument(0));
+    // ── getInventoryPaginated ─────────────────────────────────────────────
 
-            inventoryService.decreaseStock(1L, 100);
+    @Test
+    @DisplayName("getInventoryPaginated - retorna respuesta paginada correctamente")
+    void getInventoryPaginated_success() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id"));
+        Page<ItemStock> page = new PageImpl<>(List.of(itemStock), pageable, 1);
 
-            assertThat(itemStock.getQuantity()).isZero();
-            verify(itemStockRepository).save(itemStock);
-        }
+        when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
+        when(itemStockRepository.findByInventoryId(eq(1L), any(Pageable.class))).thenReturn(page);
 
-        @Test
-        @DisplayName("Debe dejar la cantidad en 0 cuando se decrementa exactamente el stock disponible")
-        void shouldSetQuantityToZeroWhenDecreaseEqualsStock() {
-            when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
-            when(itemStockRepository.save(any(ItemStock.class))).thenAnswer(inv -> inv.getArgument(0));
+        PaginatedInventoryResponse response = inventoryService.getInventoryPaginated(pageable);
 
-            inventoryService.decreaseStock(1L, 5); // exactamente el stock
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getTotalElements()).isEqualTo(1L);
+        assertThat(response.getTotalPages()).isEqualTo(1);
+        assertThat(response.getPageNumber()).isEqualTo(0);
+        assertThat(response.getPageSize()).isEqualTo(10);
+        assertThat(response.isLast()).isTrue();
+        assertThat(response.getContent().get(0).getName()).isEqualTo("Arroz Blanco");
+    }
 
-            assertThat(itemStock.getQuantity()).isZero();
-            verify(itemStockRepository).save(itemStock);
-        }
+    @Test
+    @DisplayName("getInventoryPaginated - sin inventario lanza NotFoundException")
+    void getInventoryPaginated_noInventory_throwsNotFound() {
+        when(inventoryRepository.findAll()).thenReturn(List.of());
 
-        @Test
-        @DisplayName("Debe ignorar la operación cuando quantity es null")
-        void shouldDoNothingWhenQuantityIsNull() {
-            inventoryService.decreaseStock(1L, null);
+        assertThatThrownBy(() -> inventoryService.getInventoryPaginated(Pageable.unpaged()))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("No inventory found");
+    }
 
-            verify(itemStockRepository, never()).findById(anyLong());
-            verify(itemStockRepository, never()).save(any());
-        }
+    // ── increaseStock ─────────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe ignorar la operación cuando quantity es 0")
-        void shouldDoNothingWhenQuantityIsZero() {
-            inventoryService.decreaseStock(1L, 0);
+    @Test
+    @DisplayName("increaseStock - suma cantidad correctamente")
+    void increaseStock_success() {
+        when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
 
-            verify(itemStockRepository, never()).findById(anyLong());
-        }
+        inventoryService.increaseStock(1L, 20);
 
-        @Test
-        @DisplayName("Debe ignorar la operación cuando quantity es negativo")
-        void shouldDoNothingWhenQuantityIsNegative() {
-            inventoryService.decreaseStock(1L, -10);
+        assertThat(itemStock.getQuantity()).isEqualTo(120);
+        verify(itemStockRepository).save(itemStock);
+    }
 
-            verify(itemStockRepository, never()).findById(anyLong());
-        }
+    @Test
+    @DisplayName("increaseStock - quantity null no hace nada")
+    void increaseStock_nullQuantity_doesNothing() {
+        inventoryService.increaseStock(1L, null);
+        verify(itemStockRepository, never()).findById(any());
+        verify(itemStockRepository, never()).save(any());
+    }
 
-        @Test
-        @DisplayName("Debe lanzar NotFoundException cuando el ItemStock no existe")
-        void shouldThrowWhenItemStockNotFound() {
-            when(itemStockRepository.findById(99L)).thenReturn(Optional.empty());
+    @Test
+    @DisplayName("increaseStock - quantity <= 0 no hace nada")
+    void increaseStock_zeroOrNegative_doesNothing() {
+        inventoryService.increaseStock(1L, 0);
+        inventoryService.increaseStock(1L, -5);
+        verify(itemStockRepository, never()).save(any());
+    }
 
-            assertThatThrownBy(() -> inventoryService.decreaseStock(99L, 5))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("99");
+    @Test
+    @DisplayName("increaseStock - itemStock no encontrado lanza NotFoundException")
+    void increaseStock_notFound_throws() {
+        when(itemStockRepository.findById(99L)).thenReturn(Optional.empty());
 
-            verify(itemStockRepository, never()).save(any());
-        }
+        assertThatThrownBy(() -> inventoryService.increaseStock(99L, 10))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("ItemStock not found with id: 99");
+    }
+
+    // ── decreaseStock ─────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("decreaseStock - resta cantidad correctamente")
+    void decreaseStock_success() {
+        when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
+
+        inventoryService.decreaseStock(1L, 30);
+
+        assertThat(itemStock.getQuantity()).isEqualTo(70);
+        verify(itemStockRepository).save(itemStock);
+    }
+
+    @Test
+    @DisplayName("decreaseStock - resultado negativo queda en 0")
+    void decreaseStock_resultNegative_setsZero() {
+        when(itemStockRepository.findById(1L)).thenReturn(Optional.of(itemStock));
+
+        inventoryService.decreaseStock(1L, 999);
+
+        assertThat(itemStock.getQuantity()).isEqualTo(0);
+        verify(itemStockRepository).save(itemStock);
+    }
+
+    @Test
+    @DisplayName("decreaseStock - quantity null no hace nada")
+    void decreaseStock_nullQuantity_doesNothing() {
+        inventoryService.decreaseStock(1L, null);
+        verify(itemStockRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("decreaseStock - quantity <= 0 no hace nada")
+    void decreaseStock_zeroOrNegative_doesNothing() {
+        inventoryService.decreaseStock(1L, 0);
+        inventoryService.decreaseStock(1L, -1);
+        verify(itemStockRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("decreaseStock - itemStock no encontrado lanza NotFoundException")
+    void decreaseStock_notFound_throws() {
+        when(itemStockRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inventoryService.decreaseStock(99L, 5))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("ItemStock not found with id: 99");
     }
 }

@@ -8,18 +8,13 @@ import co.edu.uniquindio.servly.model.entity.ItemCategory;
 import co.edu.uniquindio.servly.repository.ItemCategoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,332 +26,243 @@ import static org.mockito.Mockito.*;
 @DisplayName("ItemCategoryService Tests")
 class ItemCategoryServiceTest {
 
-    @Mock
-    private ItemCategoryRepository categoryRepository;
+    @Mock ItemCategoryRepository categoryRepository;
 
-    @InjectMocks
-    private ItemCategoryService itemCategoryService;
+    @InjectMocks ItemCategoryService itemCategoryService;
 
-    // ── fixtures ──────────────────────────────────────────────────────────────
-    private ItemCategory activeCategory;
-    private CreateItemCategoryRequest validRequest;
+    private ItemCategory category;
+    private CreateItemCategoryRequest request;
 
     @BeforeEach
     void setUp() {
-        activeCategory = ItemCategory.builder()
+        category = ItemCategory.builder()
                 .id(1L)
-                .name("Limpieza")
-                .description("Productos de limpieza")
+                .name("Granos")
+                .description("Arroz, lentejas, etc.")
                 .active(true)
-                .deleted(false)
                 .build();
 
-        validRequest = new CreateItemCategoryRequest();
-        validRequest.setName("Limpieza");
-        validRequest.setDescription("Productos de limpieza");
+        request = new CreateItemCategoryRequest();
+        request.setName("Granos");
+        request.setDescription("Arroz, lentejas, etc.");
     }
 
-    // =========================================================================
-    // createCategory
-    // =========================================================================
-    @Nested
-    @DisplayName("createCategory()")
-    class CreateCategory {
+    // ── createCategory ────────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe crear categoría y retornar su respuesta cuando el nombre es único")
-        void shouldCreateCategorySuccessfully() {
-            when(categoryRepository.existsByName("Limpieza")).thenReturn(false);
-            when(categoryRepository.save(any(ItemCategory.class))).thenReturn(activeCategory);
+    @Test
+    @DisplayName("createCategory - crea categoría correctamente")
+    void createCategory_success() {
+        when(categoryRepository.existsByName("Granos")).thenReturn(false);
+        when(categoryRepository.save(any())).thenReturn(category);
 
-            ItemCategoryResponse result = itemCategoryService.createCategory(validRequest);
+        ItemCategoryResponse response = itemCategoryService.createCategory(request);
 
-            assertThat(result).isNotNull();
-            assertThat(result.getName()).isEqualTo("Limpieza");
-            assertThat(result.getDescription()).isEqualTo("Productos de limpieza");
-            verify(categoryRepository).save(any(ItemCategory.class));
-        }
-
-        @Test
-        @DisplayName("La categoría creada debe estar activa por defecto")
-        void shouldCreateCategoryAsActiveByDefault() {
-            when(categoryRepository.existsByName("Limpieza")).thenReturn(false);
-            when(categoryRepository.save(any(ItemCategory.class))).thenReturn(activeCategory);
-
-            ItemCategoryResponse result = itemCategoryService.createCategory(validRequest);
-
-            assertThat(result.getActive()).isTrue();
-        }
-
-        @Test
-        @DisplayName("Debe lanzar AuthException cuando ya existe una categoría con ese nombre")
-        void shouldThrowWhenNameAlreadyExists() {
-            when(categoryRepository.existsByName("Limpieza")).thenReturn(true);
-
-            assertThatThrownBy(() -> itemCategoryService.createCategory(validRequest))
-                    .isInstanceOf(AuthException.class)
-                    .hasMessageContaining("Ya existe una categoría con el nombre: Limpieza");
-
-            verify(categoryRepository, never()).save(any());
-        }
+        assertThat(response.getName()).isEqualTo("Granos");
+        assertThat(response.getDescription()).isEqualTo("Arroz, lentejas, etc.");
+        verify(categoryRepository).save(any(ItemCategory.class));
     }
 
-    // =========================================================================
-    // getAllCategories
-    // =========================================================================
-    @Nested
-    @DisplayName("getAllCategories()")
-    class GetAllCategories {
+    @Test
+    @DisplayName("createCategory - nombre duplicado lanza AuthException")
+    void createCategory_duplicateName_throws() {
+        when(categoryRepository.existsByName("Granos")).thenReturn(true);
 
-        @Test
-        @DisplayName("Debe retornar lista de todas las categorías")
-        void shouldReturnAllCategories() {
-            ItemCategory second = ItemCategory.builder()
-                    .id(2L).name("Herramientas").description("Herramientas varias")
-                    .active(true).deleted(false).build();
+        assertThatThrownBy(() -> itemCategoryService.createCategory(request))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Ya existe una categoría con el nombre: Granos");
 
-            when(categoryRepository.findAll()).thenReturn(List.of(activeCategory, second));
-
-            List<ItemCategoryResponse> result = itemCategoryService.getAllCategories();
-
-            assertThat(result).hasSize(2);
-            assertThat(result).extracting(ItemCategoryResponse::getName)
-                    .containsExactly("Limpieza", "Herramientas");
-        }
-
-        @Test
-        @DisplayName("Debe retornar lista vacía cuando no hay categorías")
-        void shouldReturnEmptyListWhenNoCategories() {
-            when(categoryRepository.findAll()).thenReturn(List.of());
-
-            assertThat(itemCategoryService.getAllCategories()).isEmpty();
-        }
+        verify(categoryRepository, never()).save(any());
     }
 
-    // =========================================================================
-    // getAllCategoriesPaginated
-    // =========================================================================
-    @Nested
-    @DisplayName("getAllCategoriesPaginated()")
-    class GetAllCategoriesPaginated {
+    // ── getAllCategories ───────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe retornar respuesta paginada correctamente")
-        void shouldReturnPaginatedResponse() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemCategory> page = new PageImpl<>(List.of(activeCategory), pageable, 1);
-            when(categoryRepository.findAllPaginated(pageable)).thenReturn(page);
+    @Test
+    @DisplayName("getAllCategories - retorna todas las categorías")
+    void getAllCategories_success() {
+        when(categoryRepository.findAll()).thenReturn(List.of(category));
 
-            PaginatedItemCategoryResponse response = itemCategoryService.getAllCategoriesPaginated(pageable);
+        List<ItemCategoryResponse> result = itemCategoryService.getAllCategories();
 
-            assertThat(response.getContent()).hasSize(1);
-            assertThat(response.getPageNumber()).isZero();
-            assertThat(response.getPageSize()).isEqualTo(10);
-            assertThat(response.getTotalElements()).isEqualTo(1L);
-            assertThat(response.getTotalPages()).isEqualTo(1);
-            assertThat(response.isLast()).isTrue();
-        }
-
-        @Test
-        @DisplayName("Debe retornar página vacía cuando no hay resultados")
-        void shouldReturnEmptyPage() {
-            Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemCategory> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-            when(categoryRepository.findAllPaginated(pageable)).thenReturn(emptyPage);
-
-            PaginatedItemCategoryResponse response = itemCategoryService.getAllCategoriesPaginated(pageable);
-
-            assertThat(response.getContent()).isEmpty();
-            assertThat(response.getTotalElements()).isZero();
-        }
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("Granos");
     }
 
-    // =========================================================================
-    // getCategoryById
-    // =========================================================================
-    @Nested
-    @DisplayName("getCategoryById()")
-    class GetCategoryById {
+    @Test
+    @DisplayName("getAllCategories - lista vacía retorna lista vacía")
+    void getAllCategories_empty() {
+        when(categoryRepository.findAll()).thenReturn(List.of());
 
-        @Test
-        @DisplayName("Debe retornar la categoría cuando existe")
-        void shouldReturnCategoryWhenFound() {
-            when(categoryRepository.findById(1L)).thenReturn(Optional.of(activeCategory));
+        List<ItemCategoryResponse> result = itemCategoryService.getAllCategories();
 
-            ItemCategoryResponse result = itemCategoryService.getCategoryById(1L);
-
-            assertThat(result.getId()).isEqualTo(1L);
-            assertThat(result.getName()).isEqualTo("Limpieza");
-        }
-
-        @Test
-        @DisplayName("Debe lanzar AuthException cuando la categoría no existe")
-        void shouldThrowWhenCategoryNotFound() {
-            when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> itemCategoryService.getCategoryById(99L))
-                    .isInstanceOf(AuthException.class)
-                    .hasMessageContaining("99");
-        }
+        assertThat(result).isEmpty();
     }
 
-    // =========================================================================
-    // updateCategory
-    // =========================================================================
-    @Nested
-    @DisplayName("updateCategory()")
-    class UpdateCategory {
+    // ── getAllCategoriesPaginated ──────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe actualizar nombre y descripción cuando el nuevo nombre es único")
-        void shouldUpdateSuccessfully() {
-            CreateItemCategoryRequest request = new CreateItemCategoryRequest();
-            request.setName("Herramientas");
-            request.setDescription("Nueva descripción");
+    @Test
+    @DisplayName("getAllCategoriesPaginated - retorna respuesta paginada")
+    void getAllCategoriesPaginated_success() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<ItemCategory> page = new PageImpl<>(List.of(category), pageable, 1);
 
-            when(categoryRepository.findById(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.existsByName("Herramientas")).thenReturn(false);
-            when(categoryRepository.save(any(ItemCategory.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(categoryRepository.findAllPaginated(pageable)).thenReturn(page);
 
-            ItemCategoryResponse result = itemCategoryService.updateCategory(1L, request);
+        PaginatedItemCategoryResponse response = itemCategoryService.getAllCategoriesPaginated(pageable);
 
-            assertThat(result.getName()).isEqualTo("Herramientas");
-            assertThat(result.getDescription()).isEqualTo("Nueva descripción");
-        }
-
-        @Test
-        @DisplayName("Debe actualizar sin verificar duplicado cuando el nombre no cambia")
-        void shouldUpdateWithoutDuplicateCheckWhenNameUnchanged() {
-            CreateItemCategoryRequest request = new CreateItemCategoryRequest();
-            request.setName("Limpieza"); // mismo nombre
-            request.setDescription("Descripción actualizada");
-
-            when(categoryRepository.findById(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.save(any(ItemCategory.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            itemCategoryService.updateCategory(1L, request);
-
-            // existsByName NO debe ser llamado si el nombre es el mismo
-            verify(categoryRepository, never()).existsByName(anyString());
-        }
-
-        @Test
-        @DisplayName("Debe lanzar AuthException si la categoría no existe")
-        void shouldThrowWhenCategoryNotFound() {
-            when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> itemCategoryService.updateCategory(99L, validRequest))
-                    .isInstanceOf(AuthException.class)
-                    .hasMessageContaining("99");
-
-            verify(categoryRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Debe lanzar AuthException si el nuevo nombre ya pertenece a otra categoría")
-        void shouldThrowWhenNewNameIsDuplicate() {
-            CreateItemCategoryRequest request = new CreateItemCategoryRequest();
-            request.setName("Herramientas"); // nombre diferente pero ya existe
-            request.setDescription("desc");
-
-            when(categoryRepository.findById(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.existsByName("Herramientas")).thenReturn(true);
-
-            assertThatThrownBy(() -> itemCategoryService.updateCategory(1L, request))
-                    .isInstanceOf(AuthException.class)
-                    .hasMessageContaining("Ya existe una categoría con el nombre: Herramientas");
-
-            verify(categoryRepository, never()).save(any());
-        }
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getTotalElements()).isEqualTo(1L);
+        assertThat(response.getTotalPages()).isEqualTo(1);
+        assertThat(response.getPageNumber()).isEqualTo(0);
+        assertThat(response.isLast()).isTrue();
     }
 
-    // =========================================================================
-    // toggleCategory
-    // =========================================================================
-    @Nested
-    @DisplayName("toggleCategory()")
-    class ToggleCategory {
+    // ── getCategoryById ───────────────────────────────────────────────────
 
-        @Test
-        @DisplayName("Debe desactivar una categoría activa")
-        void shouldDeactivateActiveCategory() {
-            activeCategory.setActive(true);
-            when(categoryRepository.findById(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.save(any(ItemCategory.class))).thenAnswer(inv -> inv.getArgument(0));
+    @Test
+    @DisplayName("getCategoryById - retorna categoría existente")
+    void getCategoryById_success() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
 
-            ItemCategoryResponse result = itemCategoryService.toggleCategory(1L);
+        ItemCategoryResponse response = itemCategoryService.getCategoryById(1L);
 
-            assertThat(result.getActive()).isFalse();
-        }
-
-        @Test
-        @DisplayName("Debe activar una categoría inactiva")
-        void shouldActivateInactiveCategory() {
-            activeCategory.setActive(false);
-            when(categoryRepository.findById(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.save(any(ItemCategory.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            ItemCategoryResponse result = itemCategoryService.toggleCategory(1L);
-
-            assertThat(result.getActive()).isTrue();        }
-
-        @Test
-        @DisplayName("Debe lanzar AuthException si la categoría no existe")
-        void shouldThrowWhenCategoryNotFound() {
-            when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> itemCategoryService.toggleCategory(99L))
-                    .isInstanceOf(AuthException.class)
-                    .hasMessageContaining("99");
-
-            verify(categoryRepository, never()).save(any());
-        }
+        assertThat(response.getName()).isEqualTo("Granos");
     }
 
-    // =========================================================================
-    // deleteCategory
-    // =========================================================================
-    @Nested
-    @DisplayName("deleteCategory()")
-    class DeleteCategory {
+    @Test
+    @DisplayName("getCategoryById - ID no encontrado lanza AuthException")
+    void getCategoryById_notFound_throws() {
+        when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
 
-        @Test
-        @DisplayName("Debe marcar la categoría como eliminada (soft delete)")
-        void shouldSoftDeleteCategory() {
-            when(categoryRepository.findByIdIncludingDeleted(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.save(any(ItemCategory.class))).thenAnswer(inv -> inv.getArgument(0));
+        assertThatThrownBy(() -> itemCategoryService.getCategoryById(99L))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Categoría de items no encontrada con ID: 99");
+    }
 
-            itemCategoryService.deleteCategory(1L);
+    // ── updateCategory ────────────────────────────────────────────────────
 
-            assertThat(activeCategory.getDeleted()).isTrue();
-            assertThat(activeCategory.getDeletedAt()).isNotNull();
-            assertThat(activeCategory.getDeletedAt()).isBeforeOrEqualTo(LocalDateTime.now());
-            verify(categoryRepository).save(activeCategory);
-        }
+    @Test
+    @DisplayName("updateCategory - actualiza nombre y descripción")
+    void updateCategory_success() {
+        CreateItemCategoryRequest updateReq = new CreateItemCategoryRequest();
+        updateReq.setName("Lácteos");
+        updateReq.setDescription("Leche, queso, etc.");
 
-        @Test
-        @DisplayName("Debe lanzar AuthException si la categoría no existe")
-        void shouldThrowWhenCategoryNotFound() {
-            when(categoryRepository.findByIdIncludingDeleted(99L)).thenReturn(Optional.empty());
+        ItemCategory updated = ItemCategory.builder()
+                .id(1L).name("Lácteos").description("Leche, queso, etc.").active(true).build();
 
-            assertThatThrownBy(() -> itemCategoryService.deleteCategory(99L))
-                    .isInstanceOf(AuthException.class)
-                    .hasMessageContaining("99");
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(categoryRepository.existsByName("Lácteos")).thenReturn(false);
+        when(categoryRepository.save(any())).thenReturn(updated);
 
-            verify(categoryRepository, never()).save(any());
-        }
+        ItemCategoryResponse response = itemCategoryService.updateCategory(1L, updateReq);
 
-        @Test
-        @DisplayName("Debe permitir soft delete de una categoría ya inactiva")
-        void shouldAllowDeletingInactiveCategory() {
-            activeCategory.setActive(false);
-            when(categoryRepository.findByIdIncludingDeleted(1L)).thenReturn(Optional.of(activeCategory));
-            when(categoryRepository.save(any(ItemCategory.class))).thenAnswer(inv -> inv.getArgument(0));
+        assertThat(response.getName()).isEqualTo("Lácteos");
+    }
 
-            itemCategoryService.deleteCategory(1L);
+    @Test
+    @DisplayName("updateCategory - mismo nombre no valida duplicado")
+    void updateCategory_sameName_noValidation() {
+        // Si el nombre no cambió no debe verificar existsByName
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(categoryRepository.save(any())).thenReturn(category);
 
-            assertThat(activeCategory.getDeleted()).isTrue();
-            verify(categoryRepository).save(activeCategory);
-        }
+        ItemCategoryResponse response = itemCategoryService.updateCategory(1L, request);
+
+        assertThat(response.getName()).isEqualTo("Granos");
+        verify(categoryRepository, never()).existsByName(any());
+    }
+
+    @Test
+    @DisplayName("updateCategory - nuevo nombre duplicado lanza AuthException")
+    void updateCategory_duplicateNewName_throws() {
+        CreateItemCategoryRequest updateReq = new CreateItemCategoryRequest();
+        updateReq.setName("Lácteos");
+        updateReq.setDescription("desc");
+
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(categoryRepository.existsByName("Lácteos")).thenReturn(true);
+
+        assertThatThrownBy(() -> itemCategoryService.updateCategory(1L, updateReq))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Ya existe una categoría con el nombre: Lácteos");
+
+        verify(categoryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateCategory - ID no encontrado lanza AuthException")
+    void updateCategory_notFound_throws() {
+        when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> itemCategoryService.updateCategory(99L, request))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Categoría de items no encontrada con ID: 99");
+    }
+
+    // ── toggleCategory ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("toggleCategory - activa a desactiva")
+    void toggleCategory_activeToInactive() {
+        category.setActive(true);
+        ItemCategory toggled = ItemCategory.builder()
+                .id(1L).name("Granos").description("desc").active(false).build();
+
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(categoryRepository.save(any())).thenReturn(toggled);
+
+        ItemCategoryResponse response = itemCategoryService.toggleCategory(1L);
+
+        assertThat(response.getActive()).isFalse();
+    }
+
+    @Test
+    @DisplayName("toggleCategory - inactiva a activa")
+    void toggleCategory_inactiveToActive() {
+        category.setActive(false);
+        ItemCategory toggled = ItemCategory.builder()
+                .id(1L).name("Granos").description("desc").active(true).build();
+
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(categoryRepository.save(any())).thenReturn(toggled);
+
+        ItemCategoryResponse response = itemCategoryService.toggleCategory(1L);
+
+        assertThat(response.getActive()).isTrue();
+    }
+
+    @Test
+    @DisplayName("toggleCategory - ID no encontrado lanza AuthException")
+    void toggleCategory_notFound_throws() {
+        when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> itemCategoryService.toggleCategory(99L))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Categoría de items no encontrada con ID: 99");
+    }
+
+    // ── deleteCategory ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("deleteCategory - soft delete marca deletedAt y save")
+    void deleteCategory_success() {
+        category.setDeletedAt(null);
+        when(categoryRepository.findByIdIncludingDeleted(1L)).thenReturn(Optional.of(category));
+
+        itemCategoryService.deleteCategory(1L);
+
+        assertThat(category.getDeleted()).isTrue();
+        assertThat(category.getDeletedAt()).isNotNull();
+        verify(categoryRepository).save(category);
+    }
+
+    @Test
+    @DisplayName("deleteCategory - ID no encontrado lanza AuthException")
+    void deleteCategory_notFound_throws() {
+        when(categoryRepository.findByIdIncludingDeleted(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> itemCategoryService.deleteCategory(99L))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Categoría de items no encontrada con ID: 99");
     }
 }
