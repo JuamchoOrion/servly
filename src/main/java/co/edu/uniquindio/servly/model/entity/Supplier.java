@@ -30,5 +30,4 @@ public class Supplier {
 
     @Column(name = "logo_url")
     private String logoUrl;
-
 }

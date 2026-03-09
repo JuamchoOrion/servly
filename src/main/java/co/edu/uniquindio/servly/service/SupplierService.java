@@ -3,12 +3,15 @@ package co.edu.uniquindio.servly.service;
 import co.edu.uniquindio.servly.DTO.Inventory.SupplierCreateRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.SupplierDTO;
 import co.edu.uniquindio.servly.DTO.Inventory.SupplierResponse;
+import co.edu.uniquindio.servly.DTO.Inventory.PaginatedSupplierResponse;
 import co.edu.uniquindio.servly.exception.NotFoundException;
 import co.edu.uniquindio.servly.model.entity.Supplier;
 import co.edu.uniquindio.servly.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
@@ -103,5 +106,18 @@ public class SupplierService {
                 s.getEmail(),
                 s.getLogoUrl()
         );
+    }
+
+    public PaginatedSupplierResponse getAllSuppliersPaginated(Pageable pageable) {
+        Page<Supplier> page = supplierRepository.findAll(pageable);
+
+        return PaginatedSupplierResponse.builder()
+                .content(page.getContent().stream().map(this::toDTO).collect(Collectors.toList()))
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .isLast(page.isLast())
+                .build();
     }
 }

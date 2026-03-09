@@ -26,5 +26,5 @@ public class ItemStockDTO {
 
     private Integer expirationDays;
 
-    private Integer stockPercent;
+    private Integer idealStock;
 }

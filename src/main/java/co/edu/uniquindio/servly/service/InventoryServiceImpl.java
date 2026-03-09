@@ -94,7 +94,8 @@ public class InventoryServiceImpl implements InventoryService {
                 .unitOfMeasurement(s.getItem() != null ? s.getItem().getUnitOfMeasurement() : null)
                 .supplierName(s.getSupplier() != null ? s.getSupplier().getName() : null)
                 .expirationDays(s.getItem() != null ? s.getItem().getExpirationDays() : null)
-                .stockPercent(null)
+                .idealStock(s.getItem() != null ? s.getItem().getIdealStock() : null)
+
                 .build();
     }
 }
