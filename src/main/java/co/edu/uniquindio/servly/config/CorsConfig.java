@@ -9,18 +9,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
-/**
- * Configuración CORS para permitir peticiones desde el frontend.
- *
- * CORS (Cross-Origin Resource Sharing) permite que aplicaciones en diferentes
- * dominios se comuniquen entre sí.
- *
- * En este caso:
- * - Backend: http://localhost:8081
- * - Frontend: http://localhost:4200
- *
- * Son orígenes diferentes, por eso necesitamos CORS configurado.
- */
 @Configuration
 public class CorsConfig {
 
@@ -29,61 +17,49 @@ public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ ORÍGENES PERMITIDOS
-        // Agregar los dominios desde los que se permitirán peticiones
+        // ORÍGENES PERMITIDOS
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",      // Angular development
-                "http://localhost:3000",      // React/other development
-                "http://127.0.0.1:4200",      // Localhost alternativo
-                "http://127.0.0.1:3000",      // Localhost alternativo
-                frontendUrl                   // Variable de configuración
+                "http://localhost:4200",
+                "http://127.0.0.1:4200",
+                frontendUrl
         ));
 
-        // ✅ MÉTODOS HTTP PERMITIDOS
+        // MÉTODOS HTTP
         configuration.setAllowedMethods(Arrays.asList(
                 "GET",
                 "POST",
                 "PUT",
                 "DELETE",
                 "PATCH",
-                "OPTIONS"  // Importante para preflight requests
+                "OPTIONS"
         ));
 
-        // ✅ HEADERS PERMITIDOS EN LAS PETICIONES
+        // HEADERS PERMITIDOS
         configuration.setAllowedHeaders(Arrays.asList(
-                "Content-Type",
-                "Authorization",
-                "X-Requested-With",
-                "Accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-
+                "*"
         ));
 
-        // ✅ HEADERS EXPUESTOS EN LA RESPUESTA
-        // El frontend puede leer estos headers de la respuesta
+        // HEADERS EXPUESTOS
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
-                "X-Total-Count",
-                "X-Page-Count",
-                "Set-Cookie"  // ✅ Importante para que el frontend vea las cookies
+                "Set-Cookie"
         ));
 
-        // ✅ PERMITIR CREDENCIALES (cookies, headers de autorización)
+        // PERMITIR COOKIES / AUTH HEADERS
         configuration.setAllowCredentials(true);
 
-        // ✅ TIEMPO DE CACHÉ PARA PREFLIGHT REQUESTS (en segundos)
-        // Los navegadores cachearán la respuesta OPTIONS durante este tiempo
-        configuration.setMaxAge(3600L);  // 1 hora
+        // CACHE PREFLIGHT
+        configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
 }
-

@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping("/api/stock-batch")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:4200")
+
 public class ItemStockController {
 
     private final StockBatchService stockBatchService;
