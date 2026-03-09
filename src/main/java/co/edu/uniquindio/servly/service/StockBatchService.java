@@ -220,21 +220,39 @@ public class StockBatchService {
     }
 
     /**
-     * Elimina un lote de stock.
+     * Elimina (soft delete) un lote de stock.
+     *
+     * Soft Delete: No borra el registro de la BD, solo marca como eliminado con deletedAt.
+     * Ventajas:
+     * - Mantiene historial completo
+     * - Permite recuperar datos si es necesario
+     * - Preserva la integridad referencial
+     * - Auditoría: saber cuándo se eliminó
+     *
+     * El lote se marca como eliminado pero no aparece en consultas normales.
      */
     public void deleteBatch(Long batchId) {
-        log.info("Eliminando lote ID: {}", batchId);
+        log.info("Eliminando (soft delete) lote ID: {}", batchId);
 
         StockBatch batch = stockBatchRepository.findById(batchId)
                 .orElseThrow(() -> new AuthException("Lote no encontrado"));
+
+        // Validar que no esté ya eliminado
+        if (batch.getDeletedAt() != null) {
+            throw new AuthException("Este lote ya ha sido eliminado");
+        }
 
         // Restar cantidad del ItemStock
         ItemStock itemStock = batch.getItemStock();
         itemStock.setQuantity(itemStock.getQuantity() - batch.getQuantity());
         itemStockRepository.save(itemStock);
 
-        stockBatchRepository.delete(batch);
-        log.info("Lote eliminado exitosamente");
+        // 🆕 SOFT DELETE: Marcar como eliminado con timestamp
+        batch.setDeletedAt(java.time.LocalDateTime.now());
+        batch.setStatus("ELIMINADO"); // Opcional: cambiar status a ELIMINADO
+        stockBatchRepository.save(batch);
+
+        log.info("Lote eliminado correctamente (soft delete) en: {}", batch.getDeletedAt());
     }
 
     /**

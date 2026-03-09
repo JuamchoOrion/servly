@@ -3,6 +3,7 @@ package co.edu.uniquindio.servly.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 @Entity
@@ -45,6 +46,10 @@ public class StockBatch {
     @Builder.Default
     private String status = "VIGENTE"; // VIGENTE, PROXIMO_A_EXPIRAR, EXPIRADO
 
+    // 🆕 SOFT DELETE - Campo para marcar como eliminado
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     // Métodos auxiliares para manejo de vencimiento
     @Transient
     public boolean isExpired() {
@@ -76,5 +81,13 @@ public class StockBatch {
     public void updateStatus() {
         this.status = getExpiryStatus();
     }
+
+    // 🆕 Método para soft delete
+    @Transient
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
 }
+
+
 
