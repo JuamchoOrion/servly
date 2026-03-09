@@ -1,0 +1,484 @@
+### ============================================
+### GESTIÓN DE VENCIMIENTO CON LOTES (OPCIÓN A)
+### ============================================
+### Estructura:
+### Item (Producto) → ItemStock (Total cantidad) → StockBatch (Lotes individuales)
+###
+### Ejemplo: Arroz
+### - ItemStock: cantidad total = 130kg
+###   - StockBatch 1: 100kg, Proveedor A, vence 01/Jun
+###   - StockBatch 2: 30kg, Proveedor B, vence 05/Jun
+
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzMwMjA0OTUsImV4cCI6MTc3MzEwNjg5NX0.suGwhwZndld0BEzuKH8dXPCO6DeYEtEZgpl1Os6JI_00uVMA9c8gJuv8wpVajDsV6ZaOV38mn0QNchLRcl9Fow
+
+### ============================================
+### 1. CREAR LOTES (BATCHES) DE STOCK
+### ============================================
+
+### Crear Lote 1: 100kg de Arroz, Proveedor A, vence 01/Jun
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 10,
+  "quantity": 100,
+  "supplierId": 1,
+  "batchNumber": "LOTE-ARROZ-2026-001",
+  "expiryDate": "2026-06-01"
+}
+
+### Crear Lote 2: 30kg de Arroz, Proveedor B, vence 05/Jun
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 10,
+  "quantity": 30,
+  "supplierId": 1,
+  "batchNumber": "LOTE-ARROZ-2026-002",
+  "expiryDate": "2026-06-05"
+}
+
+### Crear Lote 3: 50kg de Arroz, Proveedor A, vence 10/Jun
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 10,
+  "quantity": 50,
+  "supplierId": 1,
+  "batchNumber": "LOTE-ARROZ-2026-003",
+  "expiryDate": "2026-06-10"
+}
+
+### ============================================
+### TEST: LOTES EXPIRADOS (ItemStock ID > 17, Cat 11)
+### ============================================
+###
+### Crear lotes ya EXPIRADOS para testing
+### ItemStock ID 18, 19, 20, etc. (mayores a 17)
+### Categoría: 11 (Granos)
+### Proveedor: 4
+
+### Lote Expirado 1: 50kg, vence 01/Enero 2026 (PASADO)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 18,
+  "quantity": 50,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXPIRADO-001",
+  "expiryDate": "2026-01-01"
+}
+
+###
+
+### Lote Expirado 2: 75kg, vence 15/Enero 2026 (PASADO)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 18,
+  "quantity": 75,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXPIRADO-002",
+  "expiryDate": "2026-01-15"
+}
+
+###
+
+### Lote Expirado 3: 100kg, vence 28/Febrero 2026 (PASADO)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 19,
+  "quantity": 100,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXPIRADO-003",
+  "expiryDate": "2026-02-28"
+}
+
+###
+
+### Lote Expirado 4: 60kg, vence 07/Marzo 2026 (AYER)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 19,
+  "quantity": 60,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXPIRADO-004",
+  "expiryDate": "2026-03-07"
+}
+
+###
+
+### Lote Expirado 5: 120kg, vence 05/Marzo 2026 (HACE 3 DÍAS)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 20,
+  "quantity": 120,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXPIRADO-005",
+  "expiryDate": "2026-03-05"
+}
+
+###
+
+### Lote Expirado 6: 45kg, vence 06/Marzo 2026 (HACE 2 DÍAS)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 20,
+  "quantity": 45,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXPIRADO-006",
+  "expiryDate": "2026-03-06"
+}
+
+###
+
+### ============================================
+### VERIFICAR: OBTENER LOTES EXPIRADOS
+### ============================================
+
+### Ver todos los lotes que ya vencieron
+GET {{baseUrl}}/api/stock-batch/expired
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICAR: OBTENER LOTES DE ItemStock 18
+### ============================================
+
+### Ver todos los lotes de ItemStock 18 (debe mostrar 2 lotes expirados)
+GET {{baseUrl}}/api/stock-batch/item-stock/18
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICAR: OBTENER LOTES DE ItemStock 19
+### ============================================
+
+### Ver todos los lotes de ItemStock 19 (debe mostrar 2 lotes expirados)
+GET {{baseUrl}}/api/stock-batch/item-stock/19
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICAR: OBTENER LOTES DE ItemStock 20
+### ============================================
+
+### Ver todos los lotes de ItemStock 20 (debe mostrar 2 lotes expirados)
+GET {{baseUrl}}/api/stock-batch/item-stock/20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### 2. OBTENER TODOS LOS LOTES DE UN ITEMSTOCK
+### ============================================
+
+### Obtener todos los lotes de ItemStock ID 1 (ordenados por fecha de vencimiento - FIFO)
+GET {{baseUrl}}/api/stock-batch/item-stock/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 3. OBTENER LOTE PRÓXIMO A EXPIRAR (FIFO)
+### ============================================
+
+### Obtener el lote que vence primero (para consumir primero)
+GET {{baseUrl}}/api/stock-batch/item-stock/1/next-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 4. GESTIONAR CONSUMO CON FIFO
+### ============================================
+
+### Consumir 50kg usando FIFO:
+### - Primero consume los 50kg del LOTE-ARROZ-2026-001 (vence 01/Jun)
+### - Si no hay suficiente, continúa con el siguiente lote
+PUT {{baseUrl}}/api/stock-batch/item-stock/1/decrease?quantity=50
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Consumir 100kg usando FIFO:
+### - Consume 50kg restantes del LOTE-1 (ahora agotado)
+### - Consume 30kg del LOTE-2 (vence 05/Jun) - Ahora tiene 0
+### - Consume 20kg del LOTE-3 (vence 10/Jun) - Ahora tiene 30
+PUT {{baseUrl}}/api/stock-batch/item-stock/1/decrease?quantity=100
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 5. OBTENER LOTES EXPIRADOS
+### ============================================
+
+### Ver todos los lotes que ya vencieron
+GET {{baseUrl}}/api/stock-batch/expired
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 6. OBTENER LOTES PRÓXIMOS A EXPIRAR (7 DÍAS)
+### ============================================
+
+### Ver lotes que vencen en menos de 7 días (ALERTA)
+GET {{baseUrl}}/api/stock-batch/close-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 7. ACTUALIZAR ESTADO DE UN LOTE
+### ============================================
+
+### Marcar lote como expirado manualmente
+PUT {{baseUrl}}/api/stock-batch/1/status?status=EXPIRADO
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Marcar lote como próximo a expirar
+PUT {{baseUrl}}/api/stock-batch/1/status?status=PROXIMO_A_EXPIRAR
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Marcar lote como vigente
+PUT {{baseUrl}}/api/stock-batch/1/status?status=VIGENTE
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 8. ELIMINAR UN LOTE
+### ============================================
+
+### Eliminar un lote específico (también resta la cantidad del ItemStock)
+DELETE {{baseUrl}}/api/stock-batch/3
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### VENTAJAS DE ESTA IMPLEMENTACIÓN (OPCIÓN A)
+### ============================================
+###
+### ✅ Control granular por lote
+###    - Cada lote tiene su proveedor específico
+###    - Cada lote tiene su fecha de vencimiento
+###    - Trazabilidad completa
+###
+### ✅ FIFO automático
+###    - Consumo automático del lote que vence primero
+###    - Evita pérdidas por vencimiento
+###
+### ✅ Alertas precisas
+###    - Saber exactamente qué lote vence cuándo
+###    - Notificar cuando faltan 7 días
+###
+### ✅ Reportes detallados
+###    - Ver lotes expirados
+###    - Ver lotes próximos a expirar
+###    - Ver estado de cada lote
+###
+### ✅ Auditoría y trazabilidad
+###    - Saber qué proveedor entregó qué cantidad
+###    - Rastrear problemas de calidad por lote
+###
+### ============================================
+### EJEMPLO DE FLUJO COMPLETO
+### ============================================
+###
+### 1. Llega Arroz (100kg) del Proveedor A, vence 01/Jun
+###    POST /api/stock-batch (LOTE-1: 100kg)
+###    ItemStock.quantity = 100
+###
+### 2. Llega más Arroz (30kg) del Proveedor B, vence 05/Jun
+###    POST /api/stock-batch (LOTE-2: 30kg)
+###    ItemStock.quantity = 130
+###
+### 3. Se necesita Arroz para cocinar (50kg)
+###    PUT /api/stock-batch/item-stock/1/decrease?quantity=50
+###    - LOTE-1 disminuye de 100 a 50
+###    - ItemStock.quantity = 80
+###
+### 4. Chequear qué lote vence primero
+###    GET /api/stock-batch/item-stock/1/next-to-expire
+###    Respuesta: LOTE-1 (vence 01/Jun)
+###
+### 5. En 3 días, LOTE-1 está a punto de vencer
+###    GET /api/stock-batch/close-to-expire
+###    Alerta: LOTE-1 vence en 3 días
+###
+### 6. Se necesita 80kg más
+###    PUT /api/stock-batch/item-stock/1/decrease?quantity=80
+###    - LOTE-1 se agota (50kg consumidos)
+###    - LOTE-2 disminuye de 30 a 0 (agotado)
+###    - ItemStock.quantity = 0
+###
+
+
+
+### ============================================
+### 2. OBTENER TODOS LOS LOTES DE UN ITEMSTOCK
+### ============================================
+
+### Obtener todos los lotes de ItemStock ID 1 (ordenados por fecha de vencimiento - FIFO)
+GET {{baseUrl}}/api/stock-batch/item-stock/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 3. OBTENER LOTE PRÓXIMO A EXPIRAR (FIFO)
+### ============================================
+
+### Obtener el lote que vence primero (para consumir primero)
+GET {{baseUrl}}/api/stock-batch/item-stock/1/next-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 4. GESTIONAR CONSUMO CON FIFO
+### ============================================
+
+### Consumir 50kg usando FIFO:
+### - Primero consume los 50kg del LOTE-ARROZ-2026-001 (vence 01/Jun)
+### - Si no hay suficiente, continúa con el siguiente lote
+PUT {{baseUrl}}/api/stock-batch/item-stock/1/decrease?quantity=50
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Consumir 100kg usando FIFO:
+### - Consume 50kg restantes del LOTE-1 (ahora agotado)
+### - Consume 30kg del LOTE-2 (vence 05/Jun) - Ahora tiene 0
+### - Consume 20kg del LOTE-3 (vence 10/Jun) - Ahora tiene 30
+PUT {{baseUrl}}/api/stock-batch/item-stock/1/decrease?quantity=100
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 5. OBTENER LOTES EXPIRADOS
+### ============================================
+
+### Ver todos los lotes que ya vencieron
+GET {{baseUrl}}/api/stock-batch/expired
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 6. OBTENER LOTES PRÓXIMOS A EXPIRAR (7 DÍAS)
+### ============================================
+
+### Ver lotes que vencen en menos de 7 días (ALERTA)
+GET {{baseUrl}}/api/stock-batch/close-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 7. ACTUALIZAR ESTADO DE UN LOTE
+### ============================================
+
+### Marcar lote como expirado manualmente
+PUT {{baseUrl}}/api/stock-batch/1/status?status=EXPIRADO
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Marcar lote como próximo a expirar
+PUT {{baseUrl}}/api/stock-batch/1/status?status=PROXIMO_A_EXPIRAR
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Marcar lote como vigente
+PUT {{baseUrl}}/api/stock-batch/1/status?status=VIGENTE
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### 8. ELIMINAR UN LOTE
+### ============================================
+
+### Eliminar un lote específico (también resta la cantidad del ItemStock)
+DELETE {{baseUrl}}/api/stock-batch/3
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### ============================================
+### VENTAJAS DE ESTA IMPLEMENTACIÓN (OPCIÓN A)
+### ============================================
+###
+### ✅ Control granular por lote
+###    - Cada lote tiene su proveedor específico
+###    - Cada lote tiene su fecha de vencimiento
+###    - Trazabilidad completa
+###
+### ✅ FIFO automático
+###    - Consumo automático del lote que vence primero
+###    - Evita pérdidas por vencimiento
+###
+### ✅ Alertas precisas
+###    - Saber exactamente qué lote vence cuándo
+###    - Notificar cuando faltan 7 días
+###
+### ✅ Reportes detallados
+###    - Ver lotes expirados
+###    - Ver lotes próximos a expirar
+###    - Ver estado de cada lote
+###
+### ✅ Auditoría y trazabilidad
+###    - Saber qué proveedor entregó qué cantidad
+###    - Rastrear problemas de calidad por lote
+###
+### ============================================
+### EJEMPLO DE FLUJO COMPLETO
+### ============================================
+###
+### 1. Llega Arroz (100kg) del Proveedor A, vence 01/Jun
+###    POST /api/stock-batch (LOTE-1: 100kg)
+###    ItemStock.quantity = 100
+###
+### 2. Llega más Arroz (30kg) del Proveedor B, vence 05/Jun
+###    POST /api/stock-batch (LOTE-2: 30kg)
+###    ItemStock.quantity = 130
+###
+### 3. Se necesita Arroz para cocinar (50kg)
+###    PUT /api/stock-batch/item-stock/1/decrease?quantity=50
+###    - LOTE-1 disminuye de 100 a 50
+###    - ItemStock.quantity = 80
+###
+### 4. Chequear qué lote vence primero
+###    GET /api/stock-batch/item-stock/1/next-to-expire
+###    Respuesta: LOTE-1 (vence 01/Jun)
+###
+### 5. En 3 días, LOTE-1 está a punto de vencer
+###    GET /api/stock-batch/close-to-expire
+###    Alerta: LOTE-1 vence en 3 días
+###
+### 6. Se necesita 80kg más
+###    PUT /api/stock-batch/item-stock/1/decrease?quantity=80
+###    - LOTE-1 se agota (50kg consumidos)
+###    - LOTE-2 disminuye de 30 a 0 (agotado)
+###    - ItemStock.quantity = 0
+###
+

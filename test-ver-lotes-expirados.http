@@ -1,0 +1,190 @@
+### ============================================
+### TEST: VER LOTES EXPIRADOS Y STATUS DINÁMICO
+### ============================================
+###
+### Este test verifica que:
+### 1. Los lotes expirados se muestren correctamente
+### 2. El status se calcula DINÁMICAMENTE (no se guarda)
+###
+### Status dinámico:
+### - quantity == 0           → AGOTADO
+### - daysUntilExpiry < 0     → EXPIRADO
+### - 0 <= daysUntilExpiry <= 7 → PROXIMO_A_EXPIRAR
+### - daysUntilExpiry > 7     → VIGENTE
+
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzMwMjA0OTUsImV4cCI6MTc3MzEwNjg5NX0.suGwhwZndld0BEzuKH8dXPCO6DeYEtEZgpl1Os6JI_00uVMA9c8gJuv8wpVajDsV6ZaOV38mn0QNchLRcl9Fow
+
+### ============================================
+### OPCIÓN 1: VER TODOS LOS LOTES EXPIRADOS
+### ============================================
+###
+### Endpoint: GET /api/stock-batch/expired
+### Retorna: Array de TODOS los lotes con daysUntilExpiry < 0
+###
+### El status será calculado como: EXPIRADO
+
+GET {{baseUrl}}/api/stock-batch/expired
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### OPCIÓN 2: VER LOTES POR ITEMSTOCK
+### ============================================
+###
+### Endpoint: GET /api/stock-batch/item-stock/{id}
+### Retorna: Array de lotes del ItemStock
+###
+### El status se calcula dinámicamente para cada lote:
+### - Si daysUntilExpiry < 0     → EXPIRADO
+### - Si 0 <= daysUntilExpiry <= 7 → PROXIMO_A_EXPIRAR
+### - Si daysUntilExpiry > 7     → VIGENTE
+
+GET {{baseUrl}}/api/stock-batch/item-stock/18
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### OPCIÓN 3: VER LOTES PRÓXIMOS A EXPIRAR
+### ============================================
+###
+### Endpoint: GET /api/stock-batch/close-to-expire
+### Retorna: Lotes que vencen en menos de 7 días
+### Status: PROXIMO_A_EXPIRAR (si 0 <= daysUntilExpiry <= 7)
+
+GET {{baseUrl}}/api/stock-batch/close-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### EJEMPLO DE RESPUESTA CON STATUS DINÁMICO
+### ============================================
+###
+### GET /api/stock-batch/expired
+###
+### Antes (INCORRECTO):
+### {
+###   "id": 15,
+###   "batchNumber": "LOTE-EXP-001",
+###   "quantity": 50,
+###   "expiryDate": "2026-01-01",
+###   "status": "VIGENTE",           ← ❌ INCORRECTO
+###   "daysUntilExpiry": -66         ← Ya expiró
+### }
+###
+### Después (CORRECTO):
+### {
+###   "id": 15,
+###   "batchNumber": "LOTE-EXP-001",
+###   "quantity": 50,
+###   "expiryDate": "2026-01-01",
+###   "status": "EXPIRADO",           ← ✅ CORRECTO (calculado dinámicamente)
+###   "daysUntilExpiry": -66
+### }
+###
+### El status se CALCULA DINÁMICAMENTE basándose en:
+### if (daysUntilExpiry < 0) status = "EXPIRADO"
+
+### ============================================
+### COMPORTAMIENTO DEL STATUS
+### ============================================
+###
+### El status NO se guarda en la BD, se CALCULA en tiempo real:
+###
+### 1. Se guarda en BD:
+###    - id, batchNumber, quantity, expiryDate, createdDate, supplier
+###    - La columna "status" se puede ignorar (no se usa)
+###
+### 2. Se CALCULA en convertToDTO():
+###    if (quantity == 0)
+###      status = "AGOTADO"
+###    else if (daysUntilExpiry < 0)
+###      status = "EXPIRADO"
+###    else if (daysUntilExpiry >= 0 && daysUntilExpiry <= 7)
+###      status = "PROXIMO_A_EXPIRAR"
+###    else
+###      status = "VIGENTE"
+###
+### 3. Se retorna en la respuesta JSON
+
+### ============================================
+### VENTAJAS DEL CÁLCULO DINÁMICO
+### ============================================
+###
+### ✅ Sin inconsistencias
+###    - No hay que actualizar manualmente
+###    - Siempre está al día
+###
+### ✅ Tiempo real
+###    - El status cambio al instante cuando expira
+###    - No espera a que alguien actualice la BD
+###
+### ✅ Automático
+###    - No depende de jobs o tareas programadas
+###    - Funciona con cada request
+###
+### ✅ Exacto
+###    - Basado en los días exactos hasta expiración
+###    - Usa LocalDate.now() del servidor
+
+### ============================================
+### CÓMO VER LOTES EXPIRADOS - RESUMEN
+### ============================================
+###
+### Hay 3 formas de ver lotes expirados:
+###
+### 1. VER TODOS LOS EXPIRADOS:
+###    GET /api/stock-batch/expired
+###    └─ Filtra automáticamente: daysUntilExpiry < 0
+###
+### 2. VER TODOS LOS LOTES DE UN ITEM:
+###    GET /api/stock-batch/item-stock/{id}
+###    └─ Retorna todos (tienes que filtrar tú si quieres expirados)
+###
+### 3. VER PRÓXIMOS A EXPIRAR:
+###    GET /api/stock-batch/close-to-expire
+###    └─ Filtra: 0 <= daysUntilExpiry <= 7 (alerta de 7 días)
+
+### ============================================
+### EN EL DASHBOARD - CÓMO MOSTRAR
+### ============================================
+###
+### Widget "Lotes Expirados":
+###   GET /api/stock-batch/expired
+###   Mostrar en ROJO todos los lotes retornados
+###
+### Widget "Próximos a Expirar":
+###   GET /api/stock-batch/close-to-expire
+###   Mostrar en AMARILLO todos los lotes retornados
+###
+### Tabla de Inventario:
+###   GET /api/stock-batch/item-stock/{id}
+###   Colorear según status:
+###   - VIGENTE → Verde
+###   - PROXIMO_A_EXPIRAR → Amarillo
+###   - EXPIRADO → Rojo
+###   - AGOTADO → Gris
+
+### ============================================
+### PUNTOS IMPORTANTES
+### ============================================
+###
+### ❌ ANTES:
+###    - Status se guardaba como "VIGENTE"
+###    - No cambiaba aunque venciera
+###    - Había que actualizar manualmente con PUT
+###    - Inconsistencias en la BD
+###
+### ✅ AHORA:
+###    - Status se CALCULA dinámicamente
+###    - Cambia automáticamente cada segundo
+###    - No necesita actualización manual
+###    - Siempre es exacto
+
+

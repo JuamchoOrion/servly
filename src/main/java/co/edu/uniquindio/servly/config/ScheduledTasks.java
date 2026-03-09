@@ -3,6 +3,7 @@ package co.edu.uniquindio.servly.config;
 import co.edu.uniquindio.servly.repository.RevokedTokenRepository;
 import co.edu.uniquindio.servly.repository.TableSessionRepository;
 import co.edu.uniquindio.servly.repository.VerificationCodeRepository;
+import co.edu.uniquindio.servly.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ public class ScheduledTasks {
     private final VerificationCodeRepository codeRepository;
     private final TableSessionRepository     tableSessionRepository;
     private final RevokedTokenRepository     revokedTokenRepository;
+    private final AuditService               auditService;
 
     /** Limpia códigos OTP expirados o usados — cada hora. */
     @Scheduled(cron = "0 0 * * * *")
@@ -42,5 +44,14 @@ public class ScheduledTasks {
     public void cleanExpiredRevokedTokens() {
         revokedTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
         log.debug("Limpieza de tokens revocados expirados ejecutada");
+    }
+
+    /** Limpia logs de auditoría antiguos (más de 90 días) — semanalmente los domingos a las 4 AM. */
+    @Scheduled(cron = "0 0 4 * * SUN")
+    @Transactional
+    public void cleanOldAuditLogs() {
+        LocalDateTime ninetyDaysAgo = LocalDateTime.now().minusDays(90);
+        long deletedCount = auditService.deleteLogsOlderThan(ninetyDaysAgo);
+        log.info("Limpieza de logs de auditoría ejecutada. Se eliminaron {} registros antiguos", deletedCount);
     }
 }

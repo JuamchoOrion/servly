@@ -1,0 +1,524 @@
+### ============================================
+### DATASET COMPLETO - ITEMS, ITEMSTOCK Y LOTES
+### ============================================
+### Este archivo genera un dataset completo para testing
+### Incluye: Items, ItemStock y StockBatch
+
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzMwMjA0OTUsImV4cCI6MTc3MzEwNjg5NX0.suGwhwZndld0BEzuKH8dXPCO6DeYEtEZgpl1Os6JI_00uVMA9c8gJuv8wpVajDsV6ZaOV38mn0QNchLRcl9Fow
+
+### ============================================
+### PASO 1: CREAR ITEMS (Si no existen)
+### ============================================
+
+### Crear Item 1: Arroz
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Arroz Blanco",
+  "description": "Arroz blanco de grano largo",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 365,
+  "category": "11",
+  "idealStock": 100
+}
+
+### Crear Item 2: Pollo
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Pechuga de Pollo",
+  "description": "Pechuga de pollo fresca",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 7,
+  "category": "15",
+  "idealStock": 50
+}
+
+### Crear Item 3: Leche
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Leche Entera",
+  "description": "Leche entera pasteurizada",
+  "unitOfMeasurement": "litros",
+  "expirationDays": 14,
+  "category": "17",
+  "idealStock": 80
+}
+
+### Crear Item 4: Queso
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Queso Fresco",
+  "description": "Queso fresco artesanal",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 21,
+  "category": "17",
+  "idealStock": 30
+}
+
+### Crear Item 5: Tomate
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Tomate Rojo",
+  "description": "Tomate rojo fresco",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 10,
+  "category": "19",
+  "idealStock": 60
+}
+
+### Crear Item 6: Cebolla
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Cebolla Blanca",
+  "description": "Cebolla blanca fresca",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 30,
+  "category": "19",
+  "idealStock": 50
+}
+
+### Crear Item 7: Aceite
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Aceite de Oliva",
+  "description": "Aceite de oliva extra virgen",
+  "unitOfMeasurement": "litros",
+  "expirationDays": 730,
+  "category": "22",
+  "idealStock": 20
+}
+
+### Crear Item 8: Sal
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sal Refinada",
+  "description": "Sal refinada de mesa",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 999,
+  "category": "21",
+  "idealStock": 10
+}
+
+### ============================================
+### PASO 2: CREAR LOTES - ARROZ (ItemStock ID 1)
+### ============================================
+
+### Lote 1: Arroz - 100kg, Proveedor Agrícola A, Vence 01/Jun
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 1,
+  "quantity": 100,
+  "supplierId": 1,
+  "batchNumber": "LOTE-ARROZ-2026-001",
+  "expiryDate": "2026-06-01"
+}
+
+### Lote 2: Arroz - 80kg, Proveedor Agrícola B, Vence 15/Jun
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 1,
+  "quantity": 80,
+  "supplierId": 2,
+  "batchNumber": "LOTE-ARROZ-2026-002",
+  "expiryDate": "2026-06-15"
+}
+
+### Lote 3: Arroz - 60kg, Proveedor Agrícola A, Vence 20/Jun
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 1,
+  "quantity": 60,
+  "supplierId": 1,
+  "batchNumber": "LOTE-ARROZ-2026-003",
+  "expiryDate": "2026-06-20"
+}
+
+### ============================================
+### PASO 3: CREAR LOTES - POLLO (ItemStock ID 2)
+### ============================================
+
+### Lote 1: Pollo - 40kg, Proveedor Carnes Premium, Vence 15/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 2,
+  "quantity": 40,
+  "supplierId": 3,
+  "batchNumber": "LOTE-POLLO-2026-001",
+  "expiryDate": "2026-03-15"
+}
+
+### Lote 2: Pollo - 35kg, Proveedor Granja La Paz, Vence 18/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 2,
+  "quantity": 35,
+  "supplierId": 4,
+  "batchNumber": "LOTE-POLLO-2026-002",
+  "expiryDate": "2026-03-18"
+}
+
+### Lote 3: Pollo - 25kg, Proveedor Carnes Premium, Vence 20/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 2,
+  "quantity": 25,
+  "supplierId": 3,
+  "batchNumber": "LOTE-POLLO-2026-003",
+  "expiryDate": "2026-03-20"
+}
+
+### ============================================
+### PASO 4: CREAR LOTES - LECHE (ItemStock ID 3)
+### ============================================
+
+### Lote 1: Leche - 50L, Proveedor Lácteos Valley, Vence 22/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 3,
+  "quantity": 50,
+  "supplierId": 5,
+  "batchNumber": "LOTE-LECHE-2026-001",
+  "expiryDate": "2026-03-22"
+}
+
+### Lote 2: Leche - 40L, Proveedor Lácteos Valley, Vence 25/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 3,
+  "quantity": 40,
+  "supplierId": 5,
+  "batchNumber": "LOTE-LECHE-2026-002",
+  "expiryDate": "2026-03-25"
+}
+
+### ============================================
+### PASO 5: CREAR LOTES - QUESO (ItemStock ID 4)
+### ============================================
+
+### Lote 1: Queso - 20kg, Proveedor Quesería Andina, Vence 30/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 4,
+  "quantity": 20,
+  "supplierId": 6,
+  "batchNumber": "LOTE-QUESO-2026-001",
+  "expiryDate": "2026-03-30"
+}
+
+### Lote 2: Queso - 15kg, Proveedor Quesería Andina, Vence 05/Apr
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 4,
+  "quantity": 15,
+  "supplierId": 6,
+  "batchNumber": "LOTE-QUESO-2026-002",
+  "expiryDate": "2026-04-05"
+}
+
+### ============================================
+### PASO 6: CREAR LOTES - TOMATE (ItemStock ID 5)
+### ============================================
+
+### Lote 1: Tomate - 60kg, Proveedor Huerta Fresca, Vence 18/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 5,
+  "quantity": 60,
+  "supplierId": 7,
+  "batchNumber": "LOTE-TOMATE-2026-001",
+  "expiryDate": "2026-03-18"
+}
+
+### Lote 2: Tomate - 45kg, Proveedor Productor Local, Vence 20/Mar
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 5,
+  "quantity": 45,
+  "supplierId": 8,
+  "batchNumber": "LOTE-TOMATE-2026-002",
+  "expiryDate": "2026-03-20"
+}
+
+### ============================================
+### PASO 7: CREAR LOTES - CEBOLLA (ItemStock ID 6)
+### ============================================
+
+### Lote 1: Cebolla - 70kg, Proveedor Huerta Fresca, Vence 10/Apr
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 6,
+  "quantity": 70,
+  "supplierId": 7,
+  "batchNumber": "LOTE-CEBOLLA-2026-001",
+  "expiryDate": "2026-04-10"
+}
+
+### Lote 2: Cebolla - 50kg, Proveedor Productor Local, Vence 15/Apr
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 6,
+  "quantity": 50,
+  "supplierId": 8,
+  "batchNumber": "LOTE-CEBOLLA-2026-002",
+  "expiryDate": "2026-04-15"
+}
+
+### ============================================
+### PASO 8: CREAR LOTES - ACEITE (ItemStock ID 7)
+### ============================================
+
+### Lote 1: Aceite - 15L, Proveedor Olivares España, Vence 01/Jan 2027
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 7,
+  "quantity": 15,
+  "supplierId": 9,
+  "batchNumber": "LOTE-ACEITE-2026-001",
+  "expiryDate": "2027-01-01"
+}
+
+### Lote 2: Aceite - 10L, Proveedor Olivares España, Vence 15/Jan 2027
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 7,
+  "quantity": 10,
+  "supplierId": 9,
+  "batchNumber": "LOTE-ACEITE-2026-002",
+  "expiryDate": "2027-01-15"
+}
+
+### ============================================
+### PASO 9: CREAR LOTES - SAL (ItemStock ID 8)
+### ============================================
+
+### Lote 1: Sal - 20kg, Proveedor Salinas Nacionales, Vence 01/Jan 2028
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 8,
+  "quantity": 20,
+  "supplierId": 10,
+  "batchNumber": "LOTE-SAL-2026-001",
+  "expiryDate": "2028-01-01"
+}
+
+### ============================================
+### VERIFICAR DATOS - CONSULTAS DE LECTURA
+### ============================================
+
+### Obtener todos los items con paginación
+GET {{baseUrl}}/api/items?page=0&size=20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Obtener lotes próximos a expirar (ALERTA)
+GET {{baseUrl}}/api/stock-batch/close-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Obtener todos los lotes expirados
+GET {{baseUrl}}/api/stock-batch/expired
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Obtener todos los lotes del Arroz (ItemStock ID 1)
+GET {{baseUrl}}/api/stock-batch/item-stock/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Obtener todos los lotes del Pollo (ItemStock ID 2)
+GET {{baseUrl}}/api/stock-batch/item-stock/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Obtener lote próximo a expirar del Arroz
+GET {{baseUrl}}/api/stock-batch/item-stock/1/next-to-expire
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### EJEMPLOS DE CONSUMO - FIFO
+### ============================================
+
+### Consumir 30kg de Arroz (FIFO automático)
+PUT {{baseUrl}}/api/stock-batch/item-stock/1/decrease?quantity=30
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Consumir 50kg de Pollo (FIFO automático)
+PUT {{baseUrl}}/api/stock-batch/item-stock/2/decrease?quantity=50
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Consumir 25L de Leche (FIFO automático)
+PUT {{baseUrl}}/api/stock-batch/item-stock/3/decrease?quantity=25
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### EJEMPLOS DE ESTADO Y DESCARTE
+### ============================================
+
+### Marcar lote de Arroz como próximo a expirar
+PUT {{baseUrl}}/api/stock-batch/1/status?status=PROXIMO_A_EXPIRAR
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Descartar lote de Pollo (DELETE)
+DELETE {{baseUrl}}/api/stock-batch/4
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### RESUMEN DEL DATASET
+### ============================================
+###
+### ITEMS CREADOS (8 total):
+### 1. Arroz Blanco (365 días) - ItemStock ID 1
+### 2. Pechuga de Pollo (7 días) - ItemStock ID 2
+### 3. Leche Entera (14 días) - ItemStock ID 3
+### 4. Queso Fresco (21 días) - ItemStock ID 4
+### 5. Tomate Rojo (10 días) - ItemStock ID 5
+### 6. Cebolla Blanca (30 días) - ItemStock ID 6
+### 7. Aceite de Oliva (730 días) - ItemStock ID 7
+### 8. Sal Refinada (999 días) - ItemStock ID 8
+###
+### LOTES CREADOS (15 total):
+### - 3 lotes de Arroz (100kg, 80kg, 60kg)
+### - 3 lotes de Pollo (40kg, 35kg, 25kg)
+### - 2 lotes de Leche (50L, 40L)
+### - 2 lotes de Queso (20kg, 15kg)
+### - 2 lotes de Tomate (60kg, 45kg)
+### - 2 lotes de Cebolla (70kg, 50kg)
+### - 2 lotes de Aceite (15L, 10L)
+### - 1 lote de Sal (20kg)
+###
+### TOTAL CANTIDAD EN INVENTARIO:
+### - Arroz: 240kg
+### - Pollo: 100kg
+### - Leche: 90L
+### - Queso: 35kg
+### - Tomate: 105kg
+### - Cebolla: 120kg
+### - Aceite: 25L
+### - Sal: 20kg
+###
+### PRÓXIMOS A EXPIRAR (7 días):
+### - Pollo (15, 18, 20 Mar)
+### - Tomate (18, 20 Mar)
+### - Leche (22, 25 Mar)
+### - Cebolla (10, 15 Apr)
+###
+### ============================================
+### CÓMO EJECUTAR
+### ============================================
+###
+### 1. Abre este archivo en tu IDE (JetBrains)
+### 2. Copia tu token actual en la línea de @token
+### 3. Ejecuta los requests en orden:
+###    - PASO 1: Crear Items (si no existen)
+###    - PASO 2-8: Crear Lotes
+###    - VERIFICAR: Consultas de lectura
+###    - EJEMPLOS: Consumo y estado
+###
+### Cada request se puede ejecutar individualmente
+### Los IDs se asignan automáticamente por la BD
+###
+### ============================================
+

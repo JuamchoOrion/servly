@@ -1,0 +1,328 @@
+### ============================================
+### TEST LOTES EXPIRADOS - ITEMSTOCK ID > 17
+### ============================================
+###
+### Crear lotes YA EXPIRADOS para testing de alertas
+### ItemStock ID: 18, 19, 20 (mayores a 17)
+### Categoría: 11 (Granos)
+### Proveedor: 4
+### Token: válido
+
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzMwMjA0OTUsImV4cCI6MTc3MzEwNjg5NX0.suGwhwZndld0BEzuKH8dXPCO6DeYEtEZgpl1Os6JI_00uVMA9c8gJuv8wpVajDsV6ZaOV38mn0QNchLRcl9Fow
+
+### ============================================
+### PASO 1: CREAR LOTES EXPIRADOS EN ITEMSTOCK 18
+### ============================================
+
+### Lote Expirado 1: 50kg, ItemStock 18, vence 01/Enero 2026 (PASADO - 67 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 18,
+  "quantity": 50,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-001",
+  "expiryDate": "2026-01-01"
+}
+
+###
+
+### Lote Expirado 2: 75kg, ItemStock 18, vence 15/Enero 2026 (PASADO - 52 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 18,
+  "quantity": 75,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-002",
+  "expiryDate": "2026-01-15"
+}
+
+###
+
+### ============================================
+### PASO 2: CREAR LOTES EXPIRADOS EN ITEMSTOCK 19
+### ============================================
+
+### Lote Expirado 3: 100kg, ItemStock 19, vence 28/Febrero 2026 (PASADO - 9 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 19,
+  "quantity": 100,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-003",
+  "expiryDate": "2026-02-28"
+}
+
+###
+
+### Lote Expirado 4: 60kg, ItemStock 19, vence 07/Marzo 2026 (PASADO - 1 día)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 19,
+  "quantity": 60,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-004",
+  "expiryDate": "2026-03-07"
+}
+
+###
+
+### ============================================
+### PASO 3: CREAR LOTES EXPIRADOS EN ITEMSTOCK 20
+### ============================================
+
+### Lote Expirado 5: 120kg, ItemStock 20, vence 05/Marzo 2026 (PASADO - 3 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 20,
+  "quantity": 120,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-005",
+  "expiryDate": "2026-03-05"
+}
+
+###
+
+### Lote Expirado 6: 45kg, ItemStock 20, vence 06/Marzo 2026 (PASADO - 2 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 20,
+  "quantity": 45,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-006",
+  "expiryDate": "2026-03-06"
+}
+
+###
+
+### ============================================
+### PASO 4: CREAR MÁS LOTES EXPIRADOS (ItemStock 21)
+### ============================================
+
+### Lote Expirado 7: 80kg, ItemStock 21, vence 01/Marzo 2026 (PASADO - 7 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 21,
+  "quantity": 80,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-007",
+  "expiryDate": "2026-03-01"
+}
+
+###
+
+### Lote Expirado 8: 90kg, ItemStock 21, vence 03/Marzo 2026 (PASADO - 5 días)
+POST {{baseUrl}}/api/stock-batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemStockId": 21,
+  "quantity": 90,
+  "supplierId": 4,
+  "batchNumber": "LOTE-EXP-008",
+  "expiryDate": "2026-03-03"
+}
+
+###
+
+### ============================================
+### VERIFICACIÓN: OBTENER TODOS LOS LOTES EXPIRADOS
+### ============================================
+
+### Endpoint: GET /api/stock-batch/expired
+### Descripción: Retorna todos los lotes que ya vencieron
+### Espera: Array con los 8 lotes creados anteriormente
+GET {{baseUrl}}/api/stock-batch/expired
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICACIÓN: OBTENER LOTES DE ITEMSTOCK 18
+### ============================================
+
+### Endpoint: GET /api/stock-batch/item-stock/18
+### Descripción: Retorna todos los lotes de ItemStock 18
+### Espera: 2 lotes expirados (LOTE-EXP-001, LOTE-EXP-002)
+GET {{baseUrl}}/api/stock-batch/item-stock/18
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICACIÓN: OBTENER LOTES DE ITEMSTOCK 19
+### ============================================
+
+### Endpoint: GET /api/stock-batch/item-stock/19
+### Descripción: Retorna todos los lotes de ItemStock 19
+### Espera: 2 lotes expirados (LOTE-EXP-003, LOTE-EXP-004)
+GET {{baseUrl}}/api/stock-batch/item-stock/19
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICACIÓN: OBTENER LOTES DE ITEMSTOCK 20
+### ============================================
+
+### Endpoint: GET /api/stock-batch/item-stock/20
+### Descripción: Retorna todos los lotes de ItemStock 20
+### Espera: 2 lotes expirados (LOTE-EXP-005, LOTE-EXP-006)
+GET {{baseUrl}}/api/stock-batch/item-stock/20
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### VERIFICACIÓN: OBTENER LOTES DE ITEMSTOCK 21
+### ============================================
+
+### Endpoint: GET /api/stock-batch/item-stock/21
+### Descripción: Retorna todos los lotes de ItemStock 21
+### Espera: 2 lotes expirados (LOTE-EXP-007, LOTE-EXP-008)
+GET {{baseUrl}}/api/stock-batch/item-stock/21
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### ACCIÓN: CAMBIAR ESTADO A EXPIRADO MANUALMENTE
+### ============================================
+
+### Marcar cualquier lote como EXPIRADO (cambiar su estado)
+PUT {{baseUrl}}/api/stock-batch/1/status?status=EXPIRADO
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### ACCIÓN: ELIMINAR LOTE EXPIRADO
+### ============================================
+
+### Eliminar un lote expirado (también resta cantidad del ItemStock)
+### Reemplaza {id} con el ID del lote a eliminar
+DELETE {{baseUrl}}/api/stock-batch/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### ============================================
+### RESUMEN DE DATOS CREADOS
+### ============================================
+###
+### TOTAL LOTES EXPIRADOS CREADOS: 8
+###
+### ItemStock 18 (2 lotes):
+###   ├─ LOTE-EXP-001: 50kg, vence 01/Enero (67 días atrás)
+###   └─ LOTE-EXP-002: 75kg, vence 15/Enero (52 días atrás)
+###   └─ SUBTOTAL: 125kg
+###
+### ItemStock 19 (2 lotes):
+###   ├─ LOTE-EXP-003: 100kg, vence 28/Febrero (9 días atrás)
+###   └─ LOTE-EXP-004: 60kg, vence 07/Marzo (1 día atrás)
+###   └─ SUBTOTAL: 160kg
+###
+### ItemStock 20 (2 lotes):
+###   ├─ LOTE-EXP-005: 120kg, vence 05/Marzo (3 días atrás)
+###   └─ LOTE-EXP-006: 45kg, vence 06/Marzo (2 días atrás)
+###   └─ SUBTOTAL: 165kg
+###
+### ItemStock 21 (2 lotes):
+###   ├─ LOTE-EXP-007: 80kg, vence 01/Marzo (7 días atrás)
+###   └─ LOTE-EXP-008: 90kg, vence 03/Marzo (5 días atrás)
+###   └─ SUBTOTAL: 170kg
+###
+### TOTAL CANTIDAD EXPIRADA: 620kg
+### PÉRDIDA ESTIMADA: 620kg
+###
+### ============================================
+### CÓMO USAR ESTE TEST
+### ============================================
+###
+### 1. CREAR TODOS LOS LOTES EXPIRADOS:
+###    └─ Ejecuta los 8 requests POST en orden
+###    └─ Verifica que cada uno retorna 201 Created
+###
+### 2. VERIFICAR DATOS:
+###    └─ GET /api/stock-batch/expired → ver todos los expirados
+###    └─ GET /api/stock-batch/item-stock/18 → ver lotes del ItemStock 18
+###    └─ GET /api/stock-batch/item-stock/19 → ver lotes del ItemStock 19
+###    └─ GET /api/stock-batch/item-stock/20 → ver lotes del ItemStock 20
+###    └─ GET /api/stock-batch/item-stock/21 → ver lotes del ItemStock 21
+###
+### 3. CAMBIAR ESTADO (OPCIONAL):
+###    └─ PUT /api/stock-batch/{id}/status?status=EXPIRADO
+###    └─ Cambia el estado del lote manualmente
+###
+### 4. ELIMINAR LOTE (OPCIONAL):
+###    └─ DELETE /api/stock-batch/{id}
+###    └─ Elimina un lote expirado del sistema
+###
+### ============================================
+### LOGS ESPERADOS EN EL SERVIDOR
+### ============================================
+###
+### Para cada POST:
+###   [INFO] Creando nuevo lote para ItemStock ID: 18
+###   [INFO] Lote creado exitosamente con ID: X - Vence: 2026-01-01
+###
+### Para GET /expired:
+###   [INFO] Obteniendo lotes expirados
+###   Retorna: Array de 8 lotes
+###
+### Para GET /item-stock/{id}:
+###   [INFO] Obteniendo lotes para ItemStock ID: 18
+###   Retorna: Array de 2 lotes (ordenados por vencimiento)
+###
+### ============================================
+### TESTING DE ALERTAS EN DASHBOARD
+### ============================================
+###
+### Con estos lotes expirados, puedes probar:
+###
+### ✅ Widget de alertas:
+###    └─ GET /api/stock-batch/close-to-expire
+###    └─ No mostrará estos lotes (vencieron hace más de 7 días)
+###
+### ✅ Widget de expirados:
+###    └─ GET /api/stock-batch/expired
+###    └─ Mostrará estos 8 lotes como EXPIRADOS
+###
+### ✅ Tabla de inventario:
+###    └─ GET /api/stock-batch/item-stock/{id}
+###    └─ Mostrará los lotes agrupados por ItemStock
+###
+### ✅ Cálculo de pérdidas:
+###    └─ Suma de cantidades de lotes expirados = 620kg
+###
+### ============================================
+

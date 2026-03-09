@@ -1,10 +1,15 @@
 package co.edu.uniquindio.servly.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
-@Data
+@Table(name = "items")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,9 +19,23 @@ public class Item {
     private String name;
 
     private String description;
-    //hacerlo escalable con otra clase puede ser
+
     @Column(nullable = false)
     private String unitOfMeasurement; // kg, unit, liters
 
     private Integer expirationDays;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
+    // Relación con ItemCategory
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "item_category_id", nullable = false)
+    private ItemCategory itemCategory;
+
+    // Nuevo campo: ideal stock (no nulleable)
+    @Column(name = "ideal_stock", nullable = false)
+    @Builder.Default
+    private Integer idealStock = 0;
 }

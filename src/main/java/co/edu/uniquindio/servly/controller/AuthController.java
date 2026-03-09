@@ -81,8 +81,10 @@ AuthController {
             cookieUtil.addJwtCookie(response, authResponse.getAccessToken(), 86400);
             cookieUtil.addRefreshTokenCookie(response, authResponse.getRefreshToken(), 604800);
 
-            // Retornar datos del usuario (sin tokens en el body)
+            // Retornar datos del usuario CON tokens para Postman/testing
             return ResponseEntity.ok(Map.of(
+                    "accessToken", authResponse.getAccessToken(),
+                    "refreshToken", authResponse.getRefreshToken(),
                     "userId", authResponse.getUserId(),
                     "email", authResponse.getEmail(),
                     "name", authResponse.getName(),
@@ -107,8 +109,10 @@ AuthController {
         cookieUtil.addJwtCookie(response, authResponse.getAccessToken(), 86400);
         cookieUtil.addRefreshTokenCookie(response, authResponse.getRefreshToken(), 604800);
 
-        // Retornar datos del usuario (sin tokens en el body)
+        // Retornar datos del usuario CON tokens para Postman/testing
         return ResponseEntity.ok(Map.of(
+                "accessToken", authResponse.getAccessToken(),
+                "refreshToken", authResponse.getRefreshToken(),
                 "userId", authResponse.getUserId(),
                 "email", authResponse.getEmail(),
                 "name", authResponse.getName(),
@@ -139,7 +143,10 @@ AuthController {
         cookieUtil.addJwtCookie(response, authResponse.getAccessToken(), 86400);
         cookieUtil.addRefreshTokenCookie(response, authResponse.getRefreshToken(), 604800);
 
+        // Retornar datos del usuario CON tokens para Postman/testing
         return ResponseEntity.ok(Map.of(
+                "accessToken", authResponse.getAccessToken(),
+                "refreshToken", authResponse.getRefreshToken(),
                 "userId", authResponse.getUserId(),
                 "email", authResponse.getEmail(),
                 "name", authResponse.getName(),

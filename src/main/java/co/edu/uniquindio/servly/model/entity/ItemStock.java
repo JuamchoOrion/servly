@@ -3,7 +3,8 @@ package co.edu.uniquindio.servly.model.entity;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
-
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "item_stock")
@@ -21,8 +22,9 @@ public class ItemStock {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false)
-    private String supplier;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id", nullable = true)
+    private Supplier supplier;
 
     @ManyToOne
     @JoinColumn(name = "item_id", nullable = false)
@@ -31,5 +33,10 @@ public class ItemStock {
     @ManyToOne
     @JoinColumn(name = "inventory_id", nullable = false)
     private Inventory inventory;
+
+    // Relación uno a muchos con StockBatch
+    @OneToMany(mappedBy = "itemStock", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<StockBatch> batches = new ArrayList<>();
 
 }

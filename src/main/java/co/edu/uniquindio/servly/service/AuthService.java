@@ -13,6 +13,7 @@ import co.edu.uniquindio.servly.exception.AuthException;
 import co.edu.uniquindio.servly.exception.MustChangePasswordException;
 import co.edu.uniquindio.servly.exception.SamePasswordException;
 import co.edu.uniquindio.servly.exception.WeakPasswordException;
+import co.edu.uniquindio.servly.model.entity.AuditLog;
 import co.edu.uniquindio.servly.model.entity.RevokedToken;
 import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.AuthProvider;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * Servicio principal de autenticación de Servly.
@@ -55,13 +57,23 @@ public class AuthService {
     private final EmailService             emailService;
     private final RevokedTokenRepository   revokedTokenRepository;
     private final RecaptchaService         recaptchaService;
+    private final AuditService             auditService;
 
     // ── Login ─────────────────────────────────────────────────────────────────
 
     public Object login(LoginRequest request) {
+        String operationKey = "login_" + request.getEmail() + "_" + System.currentTimeMillis();
+        auditService.startOperation(operationKey);
+
+        // Obtener usuario para tener el rol (incluso si falla el login)
+        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        String role = user != null ? user.getRole().name() : null;
+
         // Validar reCAPTCHA antes de intentar la autenticación
         if (!recaptchaService.verifyToken(request.getRecaptchaToken())) {
             log.warn("Intento de login fallido por reCAPTCHA inválido para: {}", request.getEmail());
+            auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_FAILED, request.getEmail(),
+                    role, false, "reCAPTCHA inválido", null);
             throw new AuthException("Validación de reCAPTCHA fallida. Por favor, intenta nuevamente.");
         }
 
@@ -70,11 +82,14 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(), request.getPassword()));
         } catch (AuthenticationException e) {
+            auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_FAILED, request.getEmail(),
+                    role, false, e.getMessage(), null);
             throw new AuthException("Email o contraseña incorrectos");
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AuthException("Usuario no encontrado"));
+        if (user == null) {
+            throw new AuthException("Usuario no encontrado");
+        }
 
         // Si el usuario debe cambiar contraseña (primer login), requerir 2FA
         if (user.isMustChangePassword() && !user.isFirstLoginCompleted()) {
@@ -83,11 +98,22 @@ public class AuthService {
             String code = codeService.generateAndSave(user.getEmail(), CodeType.TWO_FACTOR);
             emailService.sendTwoFactorCode(user.getEmail(), user.getName(), code);
             log.info("Código 2FA enviado a: {}", user.getEmail());
+
+            auditService.logEvent(AuditLog.EVENT_2FA_CODE_SENT, user.getEmail(),
+                    user.getRole().name(), true, null, null, null);
+            auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_REQUEST, user.getEmail(),
+                    user.getRole().name(), true, null, null);
+
             return new MessageResponse(
                     "Verificación en 2 pasos requerida. Se envió un código a tu correo electrónico.");
         }
 
         // Login normal sin 2FA (después del primer login ya no se pide 2FA)
+        auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_SUCCESS, user.getEmail(),
+                user.getRole().name(), true, null, user.getId());
+        auditService.logSessionStarted(user.getEmail(), user.getRole().name(),
+                "session_" + user.getId() + "_" + System.currentTimeMillis());
+
         return buildAuthResponse(user);
     }
 
@@ -99,15 +125,29 @@ public class AuthService {
      * - Si no, retorna los tokens de acceso normalmente
      */
     public AuthResponse verifyTwoFactor(TwoFactorRequest request) {
+        String operationKey = "2fa_" + request.getEmail() + "_" + System.currentTimeMillis();
+        auditService.startOperation(operationKey);
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
-        codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.TWO_FACTOR);
-        log.info("2FA verificado para: {}", request.getEmail());
-        
-        // Si es primer login, el frontend deberá redirigir al cambio de contraseña
-        // Los tokens se entregan pero el usuario debe cambiar la contraseña
-        return buildAuthResponse(user);
+        try {
+            codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.TWO_FACTOR);
+            log.info("2FA verificado para: {}", request.getEmail());
+
+            auditService.endOperation(operationKey, AuditLog.EVENT_2FA_VERIFICATION_SUCCESS, 
+                    user.getEmail(), user.getRole().name(), true, null, user.getId());
+            auditService.logSessionStarted(user.getEmail(), user.getRole().name(),
+                    "session_" + user.getId() + "_" + System.currentTimeMillis());
+
+            // Si es primer login, el frontend deberá redirigir al cambio de contraseña
+            // Los tokens se entregan pero el usuario debe cambiar la contraseña
+            return buildAuthResponse(user);
+        } catch (AuthException e) {
+            auditService.endOperation(operationKey, AuditLog.EVENT_2FA_VERIFICATION_FAILED,
+                    user.getEmail(), user.getRole().name(), false, e.getMessage(), null);
+            throw e;
+        }
     }
 
     // ── Recuperación de contraseña ────────────────────────────────────────────
@@ -115,29 +155,51 @@ public class AuthService {
     public MessageResponse forgotPassword(ForgotPasswordRequest request) {
         userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
             if (user.getProvider() != AuthProvider.LOCAL) return;
+            
+            auditService.logEvent(AuditLog.EVENT_PASSWORD_RECOVERY_REQUEST, user.getEmail(),
+                    user.getRole().name(), true, null, null, null);
+            
             String code = codeService.generateAndSave(user.getEmail(), CodeType.PASSWORD_RESET);
             emailService.sendPasswordResetCode(user.getEmail(), user.getName(), code);
             log.info("Código de reset enviado a: {}", user.getEmail());
+            
+            auditService.logEvent(AuditLog.EVENT_PASSWORD_RECOVERY_CODE_SENT, user.getEmail(),
+                    user.getRole().name(), true, null, null, null);
         });
         return new MessageResponse(
                 "Si ese email está registrado, recibirás un código para restablecer tu contraseña.");
     }
 
     public MessageResponse resetPassword(ResetPasswordRequest request) {
+        String operationKey = "password_reset_" + request.getEmail() + "_" + System.currentTimeMillis();
+        auditService.startOperation(operationKey);
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
         if (user.getProvider() != AuthProvider.LOCAL) {
+            auditService.endOperation(operationKey, AuditLog.EVENT_PASSWORD_RESET_FAILED,
+                    user.getEmail(), null, false, "OAuth2 user", null);
             throw new AuthException("Esta cuenta usa inicio de sesión con Google");
         }
 
-        codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.PASSWORD_RESET);
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.setPasswordVersion(user.getPasswordVersion() + 1);  // Incrementar versión
-        userRepository.save(user);
+        try {
+            codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.PASSWORD_RESET);
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            user.setPasswordVersion(user.getPasswordVersion() + 1);  // Incrementar versión
+            userRepository.save(user);
 
-        log.info("Contraseña restablecida para: {}", request.getEmail());
-        return new MessageResponse("Contraseña actualizada exitosamente. Ya puedes iniciar sesión.");
+            log.info("Contraseña restablecida para: {}", request.getEmail());
+            
+            auditService.endOperation(operationKey, AuditLog.EVENT_PASSWORD_RESET_SUCCESS,
+                    user.getEmail(), user.getRole().name(), true, null, user.getId());
+            
+            return new MessageResponse("Contraseña actualizada exitosamente. Ya puedes iniciar sesión.");
+        } catch (AuthException e) {
+            auditService.endOperation(operationKey, AuditLog.EVENT_PASSWORD_RESET_FAILED,
+                    user.getEmail(), user.getRole().name(), false, e.getMessage(), null);
+            throw e;
+        }
     }
 
     // ── Refresh token ─────────────────────────────────────────────────────────

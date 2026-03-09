@@ -1,0 +1,294 @@
+### ============================================
+### ITEMS PARA CATEGORÍAS ID 11-20
+### ============================================
+@baseUrl = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzI5Mzc1MjYsImV4cCI6MTc3MzAyMzkyNn0.BRArVg1AS12czyqYif_C79CIf9ZlnOQ_6JV2QOkkzcD341FvcgfWIktA1JpGCmbLXT4yd0RdcIpWUjtL9wBrTA
+
+### ============================================
+### CREAR 20 ITEMS PARA CATEGORÍAS 11-20
+### ============================================
+
+### Item 1 - Categoría 11
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Arroz Blanco Tipo A",
+  "description": "Arroz blanco de grano largo, calidad superior",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 365,
+  "category": "11"
+}
+
+### Item 2 - Categoría 11
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Arroz Integral Orgánico",
+  "description": "Arroz integral 100% orgánico, sin químicos",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 180,
+  "category": "11"
+}
+
+### Item 3 - Categoría 12
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Leche Fresca Pasteurizada",
+  "description": "Leche fresca 100% pasteurizada, entera",
+  "unitOfMeasurement": "liters",
+  "expirationDays": 7,
+  "category": "12"
+}
+
+### Item 4 - Categoría 12
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Queso Fresco Artesanal",
+  "description": "Queso fresco hecho artesanalmente",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 14,
+  "category": "12"
+}
+
+### Item 5 - Categoría 13
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Pechuga de Pollo Fresca",
+  "description": "Pechuga de pollo refrigerada, sin piel",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 3,
+  "category": "13"
+}
+
+### Item 6 - Categoría 13
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Carne de Res Magra",
+  "description": "Corte de res magra, sin grasas",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 5,
+  "category": "13"
+}
+
+### Item 7 - Categoría 14
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Tomate Rojo Fresco",
+  "description": "Tomates rojos frescos de temporada",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 10,
+  "category": "14"
+}
+
+### Item 8 - Categoría 14
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Lechuga Verde Fresca",
+  "description": "Lechuga verde crispy recién cosechada",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 7,
+  "category": "14"
+}
+
+### Item 9 - Categoría 15
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Manzana Roja Fuji",
+  "description": "Manzanas Fuji crujientes y dulces",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 30,
+  "category": "15"
+}
+
+### Item 10 - Categoría 15
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Plátano Amarillo",
+  "description": "Plátanos amarillos maduros",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 5,
+  "category": "15"
+}
+
+### Item 11 - Categoría 16
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Agua Mineral Embotellada",
+  "description": "Agua mineral natural sin gas",
+  "unitOfMeasurement": "liters",
+  "expirationDays": 365,
+  "category": "16"
+}
+
+### Item 12 - Categoría 16
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Café Tostado Molido",
+  "description": "Café tostado medio molido 100% arábica",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 180,
+  "category": "16"
+}
+
+### Item 13 - Categoría 17
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sal Marina Refinada",
+  "description": "Sal marina refinada yodada",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 730,
+  "category": "17"
+}
+
+### Item 14 - Categoría 17
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Azúcar Blanca Granulada",
+  "description": "Azúcar blanca granulada refinada",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 730,
+  "category": "17"
+}
+
+### Item 15 - Categoría 18
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Aceite de Oliva Extra Virgen",
+  "description": "Aceite de oliva extra virgen premium",
+  "unitOfMeasurement": "liters",
+  "expirationDays": 730,
+  "category": "18"
+}
+
+### Item 16 - Categoría 18
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Aceite de Girasol Refinado",
+  "description": "Aceite de girasol refinado para cocina",
+  "unitOfMeasurement": "liters",
+  "expirationDays": 365,
+  "category": "18"
+}
+
+### Item 17 - Categoría 19
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Harina de Trigo Integral",
+  "description": "Harina integral molida fina",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 180,
+  "category": "19"
+}
+
+### Item 18 - Categoría 19
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Harina de Maíz Precocida",
+  "description": "Harina de maíz precocida lista para usar",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 240,
+  "category": "19"
+}
+
+### Item 19 - Categoría 20
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Frijoles Negros Secos",
+  "description": "Frijoles negros secos de calidad premium",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 365,
+  "category": "20"
+}
+
+### Item 20 - Categoría 20
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Lentejas Rojas Secas",
+  "description": "Lentejas rojas ricas en proteína",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 365,
+  "category": "20"
+}
+
+### ============================================
+### PRUEBAS - OBTENER DATOS
+### ============================================
+
+### Obtener todos los items
+GET {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Obtener items de la categoría 11
+GET {{baseUrl}}/api/items/category/11
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Obtener items de la categoría 15
+GET {{baseUrl}}/api/items/category/15
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### Buscar items con "Arroz"
+GET {{baseUrl}}/api/items/search?name=Arroz
+Authorization: Bearer {{token}}
+Content-Type: application/json
+

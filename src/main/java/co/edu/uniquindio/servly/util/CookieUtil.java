@@ -12,7 +12,7 @@ public class CookieUtil {
      */
     public void addJwtCookie(HttpServletResponse response, String token, long maxAgeSeconds) {
         response.addHeader("Set-Cookie", String.format(
-                "accessToken=%s; Path=/; Max-Age=%d; HttpOnly; Secure=false; SameSite=Lax",
+                "accessToken=%s; Path=/; Max-Age=%d; HttpOnly; Secure=false; SameSite=None",
                 token,
                 maxAgeSeconds
         ));
@@ -23,7 +23,7 @@ public class CookieUtil {
      */
     public void addRefreshTokenCookie(HttpServletResponse response, String token, long maxAgeSeconds) {
         response.addHeader("Set-Cookie", String.format(
-                "refreshToken=%s; Path=/; Max-Age=%d; HttpOnly; Secure=false; SameSite=Lax",
+                "refreshToken=%s; Path=/; Max-Age=%d; HttpOnly; Secure=false; SameSite=None",
                 token,
                 maxAgeSeconds
         ));
@@ -32,8 +32,8 @@ public class CookieUtil {
      * Elimina las cookies de los tokens
      */
     public void removeJwtCookies(HttpServletResponse response) {
-        response.addHeader("Set-Cookie", "accessToken=; Path=/; Max-Age=0; HttpOnly; Secure=false; SameSite=Lax");
-        response.addHeader("Set-Cookie", "refreshToken=; Path=/; Max-Age=0; HttpOnly; Secure=false; SameSite=Lax");
+        response.addHeader("Set-Cookie", "accessToken=; Path=/; Max-Age=0; HttpOnly; Secure=false; SameSite=None");
+        response.addHeader("Set-Cookie", "refreshToken=; Path=/; Max-Age=0; HttpOnly; Secure=false; SameSite=None");
     }
 
 }
