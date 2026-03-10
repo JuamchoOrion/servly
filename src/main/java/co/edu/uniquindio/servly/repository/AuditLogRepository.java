@@ -33,7 +33,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, String> {
             AVG(CAST(a.durationMs AS double))
         )
         FROM AuditLog a
-        WHERE a.eventType IN ('LOGIN_REQUEST', 'LOGIN_SUCCESS', 'LOGIN_FAILED')
+        WHERE a.eventType IN ('LOGIN_SUCCESS', 'LOGIN_FAILED')
         AND a.createdAt BETWEEN :start AND :end
     """)
     co.edu.uniquindio.servly.model.dto.metrics.AuthMetricsDTO getLoginMetrics(
@@ -48,7 +48,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, String> {
             AVG(CAST(a.durationMs AS double))
         )
         FROM AuditLog a
-        WHERE a.eventType IN ('LOGIN_REQUEST', 'LOGIN_SUCCESS', 'LOGIN_FAILED')
+        WHERE a.eventType IN ('LOGIN_SUCCESS', 'LOGIN_FAILED')
         AND a.role = :role
         AND a.createdAt BETWEEN :start AND :end
     """)
@@ -65,7 +65,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, String> {
             (SELECT COUNT(a2) FROM AuditLog a2 WHERE a2.eventType = '2FA_VERIFICATION_FAILED' AND a2.createdAt BETWEEN :start AND :end)
         )
         FROM AuditLog a
-        WHERE a.eventType = '2FA_VERIFICATION_REQUEST'
+        WHERE a.eventType IN ('2FA_VERIFICATION_SUCCESS', '2FA_VERIFICATION_FAILED')
         AND a.createdAt BETWEEN :start AND :end
     """)
     co.edu.uniquindio.servly.model.dto.metrics.TwoFactorMetricsDTO getTwoFactorMetrics(
