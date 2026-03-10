@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,7 +88,8 @@ public class AuthService {
             authMetricsService.recordLoginAttempt(role, false, 0);
             auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_FAILED, request.getEmail(),
                     role, false, e.getMessage(), null);
-            throw new AuthException("Email o contraseña incorrectos");
+            // Lanzar BadCredentialsException para que el GlobalExceptionHandler lo mapee a 401
+            throw new BadCredentialsException("Email o contraseña incorrectos");
         }
 
         if (user == null) {

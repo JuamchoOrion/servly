@@ -5,8 +5,11 @@ import co.edu.uniquindio.servly.DTO.Inventory.SupplierDTO;
 import co.edu.uniquindio.servly.DTO.Inventory.SupplierResponse;
 import co.edu.uniquindio.servly.DTO.Inventory.PaginatedSupplierResponse;
 import co.edu.uniquindio.servly.exception.NotFoundException;
+import co.edu.uniquindio.servly.exception.ConflictException;
 import co.edu.uniquindio.servly.model.entity.Supplier;
 import co.edu.uniquindio.servly.repository.SupplierRepository;
+import co.edu.uniquindio.servly.repository.ItemStockRepository;
+import co.edu.uniquindio.servly.repository.StockBatchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +26,8 @@ public class SupplierService {
 
     private final SupplierRepository supplierRepository;
     private final ImageService imageService;
+    private final ItemStockRepository itemStockRepository;
+    private final StockBatchRepository stockBatchRepository;
 
     public List<SupplierDTO> getAllSuppliers() {
         return supplierRepository.findAll().stream()
@@ -90,6 +95,23 @@ public class SupplierService {
     public void deleteSupplier(Long id) {
         Supplier supplier = supplierRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Supplier not found with id: " + id));
+
+        // Verificar referencias en ItemStock
+        long itemStockRefs = itemStockRepository.findAll().stream()
+                .filter(is -> is.getSupplier() != null && is.getSupplier().getId().equals(id))
+                .count();
+        if (itemStockRefs > 0) {
+            throw new ConflictException("No se puede eliminar el proveedor porque está asociado a ItemStock(s)");
+        }
+
+        // Verificar referencias en StockBatch
+        long batchRefs = stockBatchRepository.findAll().stream()
+                .filter(sb -> sb.getSupplier() != null && sb.getSupplier().getId().equals(id))
+                .count();
+        if (batchRefs > 0) {
+            throw new ConflictException("No se puede eliminar el proveedor porque está asociado a StockBatch(s)");
+        }
+
         supplierRepository.delete(supplier);
     }
 
