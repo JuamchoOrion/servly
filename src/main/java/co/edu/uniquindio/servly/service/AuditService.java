@@ -13,6 +13,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -94,22 +95,36 @@ public class AuditService {
 
     /**
      * Registra evento de sesión finalizada.
+     * 
+     * @param sessionId ID de la sesión a cerrar (puede ser null para buscar la más reciente)
+     * @param email Email del usuario propietario de la sesión
      */
     @Transactional
     public void logSessionEnded(String sessionId, String email) {
         LocalDateTime now = LocalDateTime.now();
 
         // Buscar la sesión iniciada y actualizarla
-        auditLogRepository.findByEventTypeAndEmailAndDateRange(
-                        AuditLog.EVENT_SESSION_STARTED, email,
-                        now.minusHours(24), now)
-                .stream()
-                .filter(log -> sessionId.equals(log.getSessionId()))
+        List<AuditLog> sessionLogs = auditLogRepository.findByEventTypeAndEmailAndDateRange(
+                AuditLog.EVENT_SESSION_STARTED, email,
+                now.minusHours(24), now);
+
+        // Si no hay sessionId o no coincide, usar la sesión más reciente sin cerrar
+        sessionLogs.stream()
+                .filter(log -> sessionId == null || sessionId.equals(log.getSessionId()))
                 .findFirst()
+                .or(() -> {
+                    // Si no encontró por sessionId, buscar cualquier sesión sin cerrar
+                    return sessionLogs.stream()
+                            .filter(log -> log.getSessionEndTime() == null)
+                            .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                            .findFirst();
+                })
                 .ifPresent(startedLog -> {
                     startedLog.setEventType(AuditLog.EVENT_SESSION_ENDED);
                     startedLog.setSessionEndTime(now);
                     auditLogRepository.save(startedLog);
+                    log.debug("Sesión cerrada para usuario: {} (duración: {})", 
+                            email, java.time.Duration.between(startedLog.getSessionStartTime(), now).toMinutes());
                 });
     }
 

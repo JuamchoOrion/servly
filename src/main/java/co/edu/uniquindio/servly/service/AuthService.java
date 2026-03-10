@@ -123,6 +123,11 @@ public class AuthService {
      * Verifica el código 2FA.
      * - Si es primer login (mustChangePassword), retorna un flag para forzar cambio de contraseña
      * - Si no, retorna los tokens de acceso normalmente
+     * 
+     * Registra eventos:
+     *  - 2FA_VERIFICATION_REQUEST: Al inicio del proceso de verificación
+     *  - 2FA_VERIFICATION_SUCCESS: Cuando la verificación es exitosa
+     *  - 2FA_VERIFICATION_FAILED: Cuando la verificación falla
      */
     public AuthResponse verifyTwoFactor(TwoFactorRequest request) {
         String operationKey = "2fa_" + request.getEmail() + "_" + System.currentTimeMillis();
@@ -131,11 +136,15 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
+        // Registrar el inicio del proceso de verificación 2FA
+        auditService.logEvent(AuditLog.EVENT_2FA_VERIFICATION_REQUEST, user.getEmail(),
+                user.getRole().name(), true, null, null, null);
+
         try {
             codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.TWO_FACTOR);
             log.info("2FA verificado para: {}", request.getEmail());
 
-            auditService.endOperation(operationKey, AuditLog.EVENT_2FA_VERIFICATION_SUCCESS, 
+            auditService.endOperation(operationKey, AuditLog.EVENT_2FA_VERIFICATION_SUCCESS,
                     user.getEmail(), user.getRole().name(), true, null, user.getId());
             auditService.logSessionStarted(user.getEmail(), user.getRole().name(),
                     "session_" + user.getId() + "_" + System.currentTimeMillis());
@@ -204,16 +213,27 @@ public class AuthService {
 
     // ── Refresh token ─────────────────────────────────────────────────────────
 
+    /**
+     * Renueva el access token usando el refresh token.
+     * 
+     * Registra eventos:
+     *  - TOKEN_REFRESH: Cuando el refresh es exitoso
+     *  - TOKEN_REFRESH_FAILED: Cuando el refresh falla
+     */
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         String email;
         try {
             email = jwtTokenProvider.extractUsername(request.getRefreshToken());
         } catch (Exception e) {
+            auditService.logEvent(AuditLog.EVENT_TOKEN_REFRESH_FAILED, "unknown",
+                    null, false, "Token inválido: " + e.getMessage(), null, null);
             throw new AuthException("Refresh token inválido o expirado");
         }
 
         // Verificar si el token está en la blacklist
         if (revokedTokenRepository.existsByToken(request.getRefreshToken())) {
+            auditService.logEvent(AuditLog.EVENT_TOKEN_REFRESH_FAILED, email,
+                    null, false, "Token revocado", null, null);
             throw new AuthException("El token ha sido revocado. Por favor inicie sesión de nuevo");
         }
 
@@ -221,8 +241,14 @@ public class AuthService {
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
         if (!jwtTokenProvider.isTokenValid(request.getRefreshToken(), user)) {
+            auditService.logEvent(AuditLog.EVENT_TOKEN_REFRESH_FAILED, email,
+                    user.getRole().name(), false, "Token expirado o inválido", null, null);
             throw new AuthException("Refresh token inválido o expirado");
         }
+
+        // Refresh exitoso
+        auditService.logEvent(AuditLog.EVENT_TOKEN_REFRESH, email,
+                user.getRole().name(), true, null, null, null);
 
         return buildAuthResponse(user);
     }
@@ -232,6 +258,8 @@ public class AuthService {
     /**
      * Invalida un refresh token agregándolo a la blacklist.
      * El usuario deberá autenticarse de nuevo para obtener nuevos tokens.
+     * 
+     * Registra el evento SESSION_ENDED para calcular la duración de la sesión.
      */
     @Transactional
     public MessageResponse logout(RefreshTokenRequest request) {
@@ -248,7 +276,7 @@ public class AuthService {
         try {
             Date expirationDate = jwtTokenProvider.extractExpiration(request.getRefreshToken());
             expiresAt = LocalDateTime.ofInstant(
-                expirationDate.toInstant(), 
+                expirationDate.toInstant(),
                 java.time.ZoneId.systemDefault()
             );
         } catch (Exception e) {
@@ -266,6 +294,16 @@ public class AuthService {
         revokedTokenRepository.save(revokedToken);
 
         log.info("Token revocado para usuario: {} (expires: {})", email, expiresAt);
+
+        // Registrar el fin de sesión para métricas de duración
+        // El sessionId se construye con el patrón usado en login: "session_" + userId + "_" + timestamp
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            // Buscamos la sesión activa del usuario y la cerramos
+            // Nota: El sessionId exacto se guardó en LOGIN_SUCCESS, aquí usamos el email para encontrarla
+            auditService.logSessionEnded(email, email);
+            log.info("Sesión cerrada para usuario: {}", email);
+        }
 
         return new MessageResponse("Sesión cerrada exitosamente");
     }
