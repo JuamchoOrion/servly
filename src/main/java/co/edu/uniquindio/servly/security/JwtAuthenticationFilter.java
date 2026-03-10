@@ -40,6 +40,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        // Excluir completamente endpoints de observabilidad (Actuator)
+        // Dejar que pasen sin validación de JWT
+        String requestURI = request.getRequestURI();
+        if (isActuatorEndpoint(requestURI)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -77,6 +85,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Verifica si la ruta es un endpoint de Actuator que no requiere autenticación.
+     */
+    private boolean isActuatorEndpoint(String requestURI) {
+        return requestURI.startsWith("/actuator/")
+                || requestURI.equals("/actuator");
     }
 
     /**
