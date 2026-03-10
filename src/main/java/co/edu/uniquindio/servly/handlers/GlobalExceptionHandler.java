@@ -2,6 +2,7 @@ package co.edu.uniquindio.servly.handlers;
 
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.exception.*;
+import co.edu.uniquindio.servly.exception.ConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -40,6 +42,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<MessageResponse> handleBadCredentials() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new MessageResponse("Credenciales inválidas"));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<MessageResponse> handleAuthenticationException(
+            AuthenticationException ex, HttpServletRequest request) {
+        log.warn("AuthenticationException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new MessageResponse("Error de autenticación: " + ex.getMessage()));
     }
 
     @ExceptionHandler(DisabledException.class)
@@ -112,6 +122,12 @@ public class GlobalExceptionHandler {
         log.warn("GoogleOAuth2BlockedException en {}: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<MessageResponse> handleConflict(ConflictException ex, HttpServletRequest request) {
+        log.warn("ConflictException en {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new MessageResponse(ex.getMessage()));
     }
 
     // ── Validaciones ──────────────────────────────────────────────────────────
