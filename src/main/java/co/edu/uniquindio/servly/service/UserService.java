@@ -6,6 +6,7 @@ import co.edu.uniquindio.servly.DTO.Roles.CreateEmployeeRequest;
 import co.edu.uniquindio.servly.DTO.Roles.UpdateRoleRequest;
 import co.edu.uniquindio.servly.DTO.Roles.UserResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.exception.ConflictException;
 import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.AuthProvider;
 import co.edu.uniquindio.servly.model.enums.Role;
@@ -41,7 +42,7 @@ public class UserService {
 
     public UserResponse createUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AuthException("Ya existe una cuenta registrada con ese email");
+            throw new ConflictException("Ya existe una cuenta registrada con ese email");
         }
 
         // Solo otro ADMIN puede crear un ADMIN
@@ -96,7 +97,7 @@ public class UserService {
 
         // Validar email no exista
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AuthException("Ya existe una cuenta registrada con ese email");
+            throw new ConflictException("Ya existe una cuenta registrada con ese email");
         }
 
         // Validar rol válido para empleado (no puede ser ADMIN)
