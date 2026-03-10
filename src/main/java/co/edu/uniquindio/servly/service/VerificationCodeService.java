@@ -1,6 +1,7 @@
 package co.edu.uniquindio.servly.service;
 
 import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.metrics.AuthMetricsService;
 import co.edu.uniquindio.servly.model.entity.AuditLog;
 import co.edu.uniquindio.servly.model.entity.VerificationCode;
 import co.edu.uniquindio.servly.model.entity.User;
@@ -38,6 +39,7 @@ public class VerificationCodeService {
     private final PasswordEncoder            passwordEncoder;
     private final UserRepository             userRepository;
     private final AuditService               auditService;
+    private final AuthMetricsService      authMetricsService;
     private final co.edu.uniquindio.servly.metrics.AuthMetricsService authMetricsService;
 
     @Value("${app.two-factor.code-expiration-minutes}")
