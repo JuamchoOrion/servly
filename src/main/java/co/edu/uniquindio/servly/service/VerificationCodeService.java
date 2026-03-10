@@ -1,8 +1,11 @@
 package co.edu.uniquindio.servly.service;
 
 import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.model.entity.AuditLog;
 import co.edu.uniquindio.servly.model.entity.VerificationCode;
+import co.edu.uniquindio.servly.model.entity.User;
 import co.edu.uniquindio.servly.model.enums.CodeType;
+import co.edu.uniquindio.servly.repository.UserRepository;
 import co.edu.uniquindio.servly.repository.VerificationCodeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +25,9 @@ import java.time.LocalDateTime;
  *  - Almacenados hasheados con BCrypt
  *  - Cada nuevo código invalida los anteriores del mismo tipo
  *  - Un código solo puede usarse una vez
+ *
+ * Auditoría:
+ *  - Registra evento CODE_EXPIRED cuando un código expira antes de usarse
  */
 @Slf4j
 @Service
@@ -30,7 +36,8 @@ public class VerificationCodeService {
 
     private final VerificationCodeRepository codeRepository;
     private final PasswordEncoder            passwordEncoder;
-    private final co.edu.uniquindio.servly.metrics.AuthMetricsService authMetricsService;
+    private final UserRepository             userRepository;
+    private final AuditService               auditService;
 
     @Value("${app.two-factor.code-expiration-minutes}")
     private int twoFactorExpiration;
@@ -74,6 +81,15 @@ public class VerificationCodeService {
                 .orElseThrow(() -> new AuthException("No hay un código de verificación activo"));
 
         if (stored.isExpiredOrUsed()) {
+            // Registrar evento de código expirado para métricas
+            String role = userRepository.findByEmail(email)
+                    .map(u -> u.getRole().name())
+                    .orElse(null);
+
+            auditService.logEvent(AuditLog.EVENT_CODE_EXPIRED, email, role,
+                    false, "Código expirado antes de ser utilizado", null, null);
+
+            log.warn("Código expirado para: {}", email);
             // Registrar que un código expiró (solo para 2FA)
             if (type == CodeType.TWO_FACTOR) {
                 authMetricsService.record2FACodeExpired();

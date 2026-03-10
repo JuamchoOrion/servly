@@ -230,13 +230,15 @@ class AuditServiceTest {
         }
 
         @Test
-        @DisplayName("No debe actualizar si el sessionId no coincide con ningún log")
-        void shouldNotUpdateWhenSessionIdMismatch() {
+        @DisplayName("Debe actualizar la sesión más reciente sin cerrar cuando el sessionId no coincide")
+        void shouldUpdateMostRecentUnmatchedSession() {
             AuditLog existingLog = AuditLog.builder()
                     .id("a")
                     .eventType(AuditLog.EVENT_SESSION_STARTED)
                     .email("user@test.com")
                     .sessionId("otro-session-id")
+                    .sessionStartTime(LocalDateTime.now().minusMinutes(30))
+                    .sessionEndTime(null)  // Sesión sin cerrar
                     .build();
 
             when(auditLogRepository.findByEventTypeAndEmailAndDateRange(
@@ -246,6 +248,35 @@ class AuditServiceTest {
 
             auditService.logSessionEnded("session-abc", "user@test.com");
 
+            ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+            verify(auditLogRepository).save(captor.capture());
+            AuditLog saved = captor.getValue();
+
+            // Debe actualizar la sesión sin cerrar aunque el sessionId no coincida
+            assertThat(saved.getEventType()).isEqualTo(AuditLog.EVENT_SESSION_ENDED);
+            assertThat(saved.getSessionEndTime()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("No debe actualizar si la sesión existente ya está cerrada")
+        void shouldNotUpdateWhenSessionAlreadyClosed() {
+            AuditLog existingLog = AuditLog.builder()
+                    .id("a")
+                    .eventType(AuditLog.EVENT_SESSION_STARTED)
+                    .email("user@test.com")
+                    .sessionId("otro-session-id")
+                    .sessionStartTime(LocalDateTime.now().minusMinutes(30))
+                    .sessionEndTime(LocalDateTime.now())  // Sesión ya cerrada
+                    .build();
+
+            when(auditLogRepository.findByEventTypeAndEmailAndDateRange(
+                    anyString(), anyString(),
+                    any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .thenReturn(List.of(existingLog));
+
+            auditService.logSessionEnded("session-abc", "user@test.com");
+
+            // No debe guardar porque no hay sesiones sin cerrar
             verify(auditLogRepository, never()).save(any());
         }
     }
