@@ -30,6 +30,7 @@ public class VerificationCodeService {
 
     private final VerificationCodeRepository codeRepository;
     private final PasswordEncoder            passwordEncoder;
+    private final co.edu.uniquindio.servly.metrics.AuthMetricsService authMetricsService;
 
     @Value("${app.two-factor.code-expiration-minutes}")
     private int twoFactorExpiration;
@@ -55,6 +56,13 @@ public class VerificationCodeService {
                 .build();
 
         codeRepository.save(code);
+
+        // Registrar que se generó un código 2FA
+        if (type == CodeType.TWO_FACTOR) {
+            authMetricsService.record2FACodeGenerated();
+            log.info("📊 2FA Code Generated Metric Recorded for: {}", email);
+        }
+
         log.debug("Código {} generado para: {}", type, email);
         return plainCode;
     }
@@ -66,6 +74,11 @@ public class VerificationCodeService {
                 .orElseThrow(() -> new AuthException("No hay un código de verificación activo"));
 
         if (stored.isExpiredOrUsed()) {
+            // Registrar que un código expiró (solo para 2FA)
+            if (type == CodeType.TWO_FACTOR) {
+                authMetricsService.record2FACodeExpired();
+                log.info("📊 2FA Code Expired Metric Recorded for: {}", email);
+            }
             throw new AuthException("El código ha expirado. Por favor solicita uno nuevo.");
         }
 

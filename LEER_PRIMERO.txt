@@ -1,0 +1,115 @@
+════════════════════════════════════════════════════════════════════════════════
+                    🚀 INICIAR SERVLY CON GRAFANA
+                          UN SOLO COMANDO
+════════════════════════════════════════════════════════════════════════════════
+
+## ⚡ COMANDO ÚNICO
+
+```powershell
+cd "C:\Users\ramir\Documents\7mo Semestre\Ing de software III\servly"
+docker-compose up --build
+```
+
+**ESO ES TODO.** Espera 3-5 minutos mientras compila.
+
+════════════════════════════════════════════════════════════════════════════════
+
+## 🎯 QUÉ SUCEDE AUTOMÁTICAMENTE
+
+✅ Java se compila
+✅ PostgreSQL inicia
+✅ Backend (port 8081) inicia
+✅ Prometheus (port 9090) inicia y recolecta métricas
+✅ Grafana (port 3000) inicia
+
+════════════════════════════════════════════════════════════════════════════════
+
+## 🌐 ACCESO
+
+Cuando veas que todos los contenedores están "Up", abre el navegador:
+
+```
+http://localhost:3000
+Usuario: admin
+Contraseña: admin
+```
+
+Verifica Prometheus en:
+```
+http://localhost:9090
+Status → Targets → "servly-backend" debe estar UP
+```
+
+════════════════════════════════════════════════════════════════════════════════
+
+## 📊 CREAR TU PRIMER GRÁFICO
+
+1. En Grafana: **+** → **Dashboard** → **New**
+2. **Add panel** → **Query**
+3. En **Metrics**, escribe:
+   ```
+   histogram_quantile(0.95, auth_login_duration_seconds_max)
+   ```
+4. **Ctrl + Shift + Enter**
+5. **Save**
+
+════════════════════════════════════════════════════════════════════════════════
+
+## 🛑 DETENER TODO
+
+```powershell
+docker-compose down
+```
+
+Para borrar datos también:
+```powershell
+docker-compose down -v
+```
+
+════════════════════════════════════════════════════════════════════════════════
+
+## 📱 URLS IMPORTANTES
+
+- Backend: http://localhost:8081
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
+- Métricas Backend: http://localhost:8081/actuator/prometheus
+
+════════════════════════════════════════════════════════════════════════════════
+
+## ✨ POR QUÉ ESTA ARQUITECTURA FUNCIONA EN AWS
+
+Todo está en Docker:
+- ✅ Same command en desarrollo (laptop)
+- ✅ Same command en producción (AWS EC2)
+- ✅ No necesitas instalar nada en el servidor
+- ✅ Solo: `docker-compose up -d`
+
+════════════════════════════════════════════════════════════════════════════════
+
+## ❓ PROBLEMAS?
+
+### "Compilation taking too long"
+→ Normal, primera compilación tarda 3-5 minutos
+
+### "Prometheus targets DOWN"
+→ Espera a que el backend esté healthy
+→ Revisa logs: docker-compose logs servly-app
+
+### "No data in Grafana"
+→ Haz login en el backend para generar métricas
+→ Espera 1-2 minutos
+→ Refresca (F5)
+
+════════════════════════════════════════════════════════════════════════════════
+
+🎯 RESUMEN:
+
+1. docker-compose up --build
+2. Espera 3-5 minutos
+3. http://localhost:3000
+4. Crea dashboard
+5. Listo ✅
+
+════════════════════════════════════════════════════════════════════════════════
+

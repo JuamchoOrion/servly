@@ -1,0 +1,150 @@
+groups:
+  - name: servly_alerts
+    interval: 15s
+    rules:
+      # AUTHENTICATION ALERTS
+
+      - alert: LoginDurationHigh
+        expr: histogram_quantile(0.95, rate(auth_login_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          module: auth
+        annotations:
+          summary: "Login duration exceeds threshold"
+          description: "p95 login duration is {{ $value | humanizeDuration }} (threshold: 2s)"
+
+      - alert: LoginSuccessRateLow
+        expr: (auth_login_success_total / auth_login_total_total) * 100 < 95
+        for: 10m
+        labels:
+          severity: critical
+          module: auth
+        annotations:
+          summary: "Login success rate below threshold"
+          description: "Current success rate: {{ $value | humanize }}% (threshold: >95%)"
+
+      - alert: TwoFACodeExpirationHigh
+        expr: (auth_2fa_codes_expired_total / auth_2fa_codes_generated_total) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+          module: auth
+        annotations:
+          summary: "2FA code expiration rate exceeds threshold"
+          description: "2FA expiration rate: {{ $value | humanize }}% (threshold: <10%)"
+
+      - alert: PasswordRecoveryDurationHigh
+        expr: histogram_quantile(0.95, rate(auth_password_recovery_duration_seconds_bucket[5m])) > 300
+        for: 5m
+        labels:
+          severity: warning
+          module: auth
+        annotations:
+          summary: "Password recovery duration exceeds threshold"
+          description: "p95 recovery duration is {{ $value | humanizeDuration }} (threshold: 5m)"
+
+      - alert: TwoFAVerificationDurationHigh
+        expr: histogram_quantile(0.95, rate(auth_2fa_verification_duration_seconds_bucket[5m])) > 60
+        for: 5m
+        labels:
+          severity: info
+          module: auth
+        annotations:
+          summary: "2FA verification duration exceeds threshold"
+          description: "p95 verification duration is {{ $value | humanizeDuration }} (threshold: 60s)"
+
+      # INVENTORY ALERTS
+
+      - alert: ItemCreationDurationHigh
+        expr: histogram_quantile(0.95, rate(inventory_item_creation_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          module: inventory
+        annotations:
+          summary: "Item creation duration exceeds threshold"
+          description: "p95 item creation duration is {{ $value | humanizeDuration }} (threshold: 500ms)"
+
+      - alert: ItemCreationSuccessRateLow
+        expr: (inventory_item_creation_success_total / inventory_item_creation_total_total) * 100 < 95
+        for: 10m
+        labels:
+          severity: critical
+          module: inventory
+        annotations:
+          summary: "Item creation success rate below threshold"
+          description: "Current success rate: {{ $value | humanize }}% (threshold: >=95%)"
+
+      - alert: CategoryCreationDurationHigh
+        expr: histogram_quantile(0.95, rate(inventory_category_creation_duration_seconds_bucket[5m])) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          module: inventory
+        annotations:
+          summary: "Category creation duration exceeds threshold"
+          description: "p95 category creation duration is {{ $value | humanizeDuration }} (threshold: 300ms)"
+
+      - alert: CategoryCreationSuccessRateLow
+        expr: (inventory_category_creation_success_total / inventory_category_creation_total_total) * 100 < 90
+        for: 10m
+        labels:
+          severity: critical
+          module: inventory
+        annotations:
+          summary: "Category creation success rate below threshold"
+          description: "Current success rate: {{ $value | humanize }}% (threshold: >=90%)"
+
+      - alert: CategoryDuplicateErrorRateHigh
+        expr: (inventory_category_duplicate_errors_total / inventory_category_creation_total_total) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+          module: inventory
+        annotations:
+          summary: "Category duplicate error rate exceeds threshold"
+          description: "Duplicate error rate: {{ $value | humanize }}% (threshold: <10%)"
+
+      - alert: CategoryToggleSuccessRateLow
+        expr: (inventory_category_toggle_success_total / inventory_category_toggle_total_total) * 100 < 98
+        for: 10m
+        labels:
+          severity: critical
+          module: inventory
+        annotations:
+          summary: "Category toggle success rate below threshold"
+          description: "Current success rate: {{ $value | humanize }}% (threshold: >=98%)"
+
+      - alert: PaginatedQueryDurationHigh
+        expr: histogram_quantile(0.95, rate(inventory_items_paginated_query_duration_seconds_bucket[5m])) > 0.15
+        for: 5m
+        labels:
+          severity: warning
+          module: inventory
+        annotations:
+          summary: "Paginated query duration exceeds threshold"
+          description: "p95 query duration is {{ $value | humanizeDuration }} (threshold: 150ms)"
+
+      # SYSTEM HEALTH ALERTS
+
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          module: monitoring
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus instance has been down for more than 1 minute"
+
+      - alert: ServlyAppDown
+        expr: up{job="servly-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          module: app
+        annotations:
+          summary: "Servly backend application is down"
+          description: "Servly app has been unreachable for more than 2 minutes"
+

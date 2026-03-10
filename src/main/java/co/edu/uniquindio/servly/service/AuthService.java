@@ -58,6 +58,7 @@ public class AuthService {
     private final RevokedTokenRepository   revokedTokenRepository;
     private final RecaptchaService         recaptchaService;
     private final AuditService             auditService;
+    private final co.edu.uniquindio.servly.metrics.AuthMetricsService authMetricsService;
 
     // ── Login ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ public class AuthService {
         // Validar reCAPTCHA antes de intentar la autenticación
         if (!recaptchaService.verifyToken(request.getRecaptchaToken())) {
             log.warn("Intento de login fallido por reCAPTCHA inválido para: {}", request.getEmail());
+            authMetricsService.recordLoginAttempt(role, false, 0);
             auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_FAILED, request.getEmail(),
                     role, false, "reCAPTCHA inválido", null);
             throw new AuthException("Validación de reCAPTCHA fallida. Por favor, intenta nuevamente.");
@@ -82,6 +84,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(), request.getPassword()));
         } catch (AuthenticationException e) {
+            authMetricsService.recordLoginAttempt(role, false, 0);
             auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_FAILED, request.getEmail(),
                     role, false, e.getMessage(), null);
             throw new AuthException("Email o contraseña incorrectos");
@@ -109,12 +112,18 @@ public class AuthService {
         }
 
         // Login normal sin 2FA (después del primer login ya no se pide 2FA)
+        long startTime = System.currentTimeMillis();
+        AuthResponse response = buildAuthResponse(user);
+        long duration = System.currentTimeMillis() - startTime;
+
+        authMetricsService.recordLoginAttempt(user.getRole().name(), true, duration);
+
         auditService.endOperation(operationKey, AuditLog.EVENT_LOGIN_SUCCESS, user.getEmail(),
                 user.getRole().name(), true, null, user.getId());
         auditService.logSessionStarted(user.getEmail(), user.getRole().name(),
                 "session_" + user.getId() + "_" + System.currentTimeMillis());
 
-        return buildAuthResponse(user);
+        return response;
     }
 
     // ── Verificación 2FA ──────────────────────────────────────────────────────
@@ -132,7 +141,11 @@ public class AuthService {
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
 
         try {
+            long startTime = System.currentTimeMillis();
             codeService.verifyCode(request.getEmail(), request.getCode(), CodeType.TWO_FACTOR);
+            long duration = System.currentTimeMillis() - startTime;
+
+            authMetricsService.record2FAVerification(duration);
             log.info("2FA verificado para: {}", request.getEmail());
 
             auditService.endOperation(operationKey, AuditLog.EVENT_2FA_VERIFICATION_SUCCESS, 

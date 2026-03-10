@@ -1,0 +1,87 @@
+# INSTRUCCIONES RÁPIDAS PARA INICIAR TODO
+
+## PASO 1: Terminal 1 - Inicia el Backend
+```bash
+cd "C:\Users\ramir\Documents\7mo Semestre\Ing de software III\servly"
+./gradlew bootRun
+```
+
+Espera hasta ver:
+```
+Started ServlyApplication in 15.234 seconds
+```
+
+Y deberías ver logs como:
+```
+✅ METRIC RECORDED: auth.login.attempt...
+```
+
+## PASO 2: Terminal 2 - Inicia Docker (Prometheus + Grafana)
+```bash
+cd "C:\Users\ramir\Documents\7mo Semestre\Ing de software III\servly"
+docker-compose up -d
+```
+
+Verifica con:
+```bash
+docker ps
+```
+
+Deberías ver 3 contenedores:
+- servly-app (tu app)
+- prometheus
+- grafana
+
+## PASO 3: Abre REST Client en VS Code
+
+1. Abre el archivo: `test-metrics-e2e.http`
+2. Instala extensión "REST Client" (por Humao) si no la tienes
+3. Ejecuta estas solicitudes EN ORDEN:
+   - **1.1** - Login exitoso
+   - **2.1** - Crear categoría
+   - **3.1** - Crear item
+   - **4.1** - Consulta paginada
+
+## PASO 4: Espera 15 segundos y Verifica en Prometheus
+
+Abre en el navegador:
+- http://localhost:9090
+
+En la barra de búsqueda escribe:
+```
+auth_login
+```
+
+Deberías ver varias métricas listadas
+
+## PASO 5: Visualiza en Grafana
+
+Abre:
+- http://localhost:3000
+- Usuario: admin
+- Contraseña: admin
+
+Busca el dashboard "Servly Dashboard" y verás los gráficos
+
+## Si No Ves Datos
+
+1. ✅ Verifica que el backend esté corriendo (debe estar en Terminal 1)
+2. ✅ Verifica que docker esté corriendo (ejecuta `docker ps`)
+3. ✅ Abre http://localhost:8081/actuator/prometheus y verifica que devuelve datos (SIN error 401)
+4. ✅ Abre http://localhost:9090/targets y verifica que dice "UP" al lado de "servly-app"
+5. ✅ Revisa los logs del backend buscando `✅ METRIC RECORDED`
+
+## Para Detener Todo
+
+Cuando termines:
+```bash
+# Terminal 1: Presiona Ctrl+C
+
+# Terminal 2:
+docker-compose down
+```
+
+---
+
+**¡Ahora sí deberían funcionar las métricas!** 🎉
+

@@ -109,6 +109,15 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
 
+                        // ── OBSERVABILITY (Prometheus, Grafana) ──────────────────────
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/prometheus",
+                                "/actuator/metrics",
+                                "/actuator/info",
+                                "/actuator/env"
+                        ).permitAll()
+
                         // ── Públicos ─────────────────────────────────────────────────
                         .requestMatchers(
                                 "/api/auth/login",
