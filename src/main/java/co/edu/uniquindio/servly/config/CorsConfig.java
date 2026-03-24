@@ -21,11 +21,17 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // ORÍGENES PERMITIDOS
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",
-                "http://127.0.0.1:4200",
-                frontendUrl
-        ));
+        // IMPORTANTE: Cuando allowCredentials=true, usar addAllowedOrigin() uno a uno,
+        // NO Arrays.asList() que genera conflicto con credentials
+        configuration.addAllowedOrigin("http://localhost:4200");
+        configuration.addAllowedOrigin("http://127.0.0.1:4200");
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin("http://127.0.0.1:3000");
+        configuration.addAllowedOrigin("http://18.228.118.105");
+        configuration.addAllowedOrigin("http://56.124.52.198");
+        configuration.addAllowedOrigin("http://56.124.52.198:3000");
+        configuration.addAllowedOrigin("http://56.124.52.198:80");
+        configuration.addAllowedOrigin(frontendUrl);
 
         // MÉTODOS HTTP
         configuration.setAllowedMethods(Arrays.asList(
