@@ -2,6 +2,7 @@ package co.edu.uniquindio.servly.config;
 
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -27,6 +28,7 @@ public class MetricsConfig {
 
     /**
      * Bean para configurar filtros globales de métricas.
+     * Habilita histogramas para todos los timers.
      */
     @Bean
     public MeterFilter meterFilter() {
@@ -34,6 +36,30 @@ public class MetricsConfig {
             String name = id.getName();
             return name.startsWith("jvm") || name.startsWith("process") || name.startsWith("system");
         });
+    }
+
+    /**
+     * Habilitar la publicación de histogramas para Prometheus.
+     * Esto crea los buckets necesarios para histogram_quantile en PromQL.
+     */
+    @Bean
+    public MeterFilter histogramBucketFilter() {
+        return new MeterFilter() {
+            @Override
+            public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
+                if (id.getName().startsWith("auth_") || id.getName().startsWith("inventory_")) {
+                    return DistributionStatisticConfig.builder()
+                        .percentilesHistogram(true)
+                        //.publishPercentiles(0.5, 0.95, 0.99)
+                        .serviceLevelObjectives(
+                            100, 200, 300, 500, 1000, 2000, 5000, 10000
+                        )
+                        .build()
+                        .merge(config);
+                }
+                return config;
+            }
+        };
     }
 
     /**
