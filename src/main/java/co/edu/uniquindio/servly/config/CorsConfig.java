@@ -20,52 +20,39 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ORÍGENES PERMITIDOS
-        // IMPORTANTE: Cuando allowCredentials=true, usar addAllowedOrigin() uno a uno,
-        // NO Arrays.asList() que genera conflicto con credentials
+        // ── ORÍGENES LOCALES ──────────────────────────────
         configuration.addAllowedOrigin("http://localhost:4200");
         configuration.addAllowedOrigin("http://127.0.0.1:4200");
         configuration.addAllowedOrigin("http://localhost:3000");
         configuration.addAllowedOrigin("http://127.0.0.1:3000");
-        configuration.addAllowedOrigin("http://18.228.118.105");
-        configuration.addAllowedOrigin("http://56.124.52.198");
-        configuration.addAllowedOrigin("http://56.124.52.198:3000");
-        configuration.addAllowedOrigin("http://56.124.52.198:80");
+
+        // ── ORÍGENES PRODUCCIÓN — agrega los https ────────
+        configuration.addAllowedOrigin("http://56.124.52.198");   // puedes dejarlo
+        configuration.addAllowedOrigin("https://56.124.52.198");  // agrega este
+        configuration.addAllowedOrigin("https://servlyapp.duckdns.org");  // ← NUEVO principal
+        configuration.addAllowedOrigin("http://servlyapp.duckdns.org");   // ← por si acaso
+
         configuration.addAllowedOrigin(frontendUrl);
 
-        // MÉTODOS HTTP
+        // ── MÉTODOS ───────────────────────────────────────
         configuration.setAllowedMethods(Arrays.asList(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS"
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
         ));
 
-        // HEADERS PERMITIDOS
-        configuration.setAllowedHeaders(Arrays.asList(
-                "*"
-        ));
+        // ── HEADERS ───────────────────────────────────────
+        configuration.setAllowedHeaders(Arrays.asList("*"));
 
-        // HEADERS EXPUESTOS
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
                 "Set-Cookie"
         ));
 
-        // PERMITIR COOKIES / AUTH HEADERS
         configuration.setAllowCredentials(true);
-
-        // CACHE PREFLIGHT
         configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
         return source;
     }
 }
