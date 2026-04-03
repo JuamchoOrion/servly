@@ -1,0 +1,73 @@
+### CRUD PRODUCTOS - Ejemplos de Prueba
+
+### 1. CREAR PRODUCTO
+POST http://localhost:8081/api/admin/products
+Content-Type: application/json
+Authorization: Bearer <TOKEN_ADMIN>
+
+{
+  "name": "Hamburguesa Clásica",
+  "description": "Carne, queso, lechuga, tomate",
+  "price": 25000,
+  "productCategoryId": 1,
+  "active": true
+}
+
+### 2. OBTENER TODOS LOS PRODUCTOS (PAGINADO)
+GET http://localhost:8081/api/admin/products?page=0&size=10&sort=id,desc
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 3. OBTENER PRODUCTOS ACTIVOS (PAGINADO)
+GET http://localhost:8081/api/admin/products/active?page=0&size=10
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 4. OBTENER PRODUCTO POR ID
+GET http://localhost:8081/api/admin/products/1
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 5. ACTUALIZAR PRODUCTO
+PUT http://localhost:8081/api/admin/products/1?name=Hamburguesa Premium&price=32000&active=true
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 6. ACTUALIZAR SOLO NOMBRE
+PUT http://localhost:8081/api/admin/products/1?name=Hamburguesa Deluxe
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 7. DESACTIVAR PRODUCTO (BORRADO LÓGICO)
+DELETE http://localhost:8081/api/admin/products/1
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 8. ACTIVAR PRODUCTO
+PATCH http://localhost:8081/api/admin/products/1/activate
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 9. DESACTIVAR PRODUCTO
+PATCH http://localhost:8081/api/admin/products/1/deactivate
+Authorization: Bearer <TOKEN_ADMIN>
+
+### 10. CREAR OTRO PRODUCTO (PIZZA)
+POST http://localhost:8081/api/admin/products
+Content-Type: application/json
+Authorization: Bearer <TOKEN_ADMIN>
+
+{
+  "name": "Pizza Margherita",
+  "description": "Tomate, mozzarella, albahaca",
+  "price": 28000,
+  "productCategoryId": 2,
+  "active": true
+}
+
+### 11. CREAR PRODUCTO (BEBIDA)
+POST http://localhost:8081/api/admin/products
+Content-Type: application/json
+Authorization: Bearer <TOKEN_ADMIN>
+
+{
+  "name": "Coca Cola 500ml",
+  "description": "Bebida gaseosa",
+  "price": 5000,
+  "productCategoryId": 3,
+  "active": true
+}
+

@@ -5,6 +5,7 @@ import jakarta.persistence.Table;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "product")
@@ -28,8 +29,12 @@ public class Product {
     @Column(length = 500)
     private String description;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
     @OneToOne
-    @JoinColumn(name = "recipe_id", nullable = false, unique = true)
+    @JoinColumn(name = "recipe_id", nullable = true)
     private Recipe recipe;
 
     @ManyToOne

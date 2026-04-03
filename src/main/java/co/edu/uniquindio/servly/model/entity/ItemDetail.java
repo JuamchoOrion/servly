@@ -26,6 +26,13 @@ public class ItemDetail {
     @Column(nullable = false)
     private Boolean isOptional;
 
+    // Variaciones de cantidad si isOptional = true
+    @Column
+    private Integer minQuantity; // Mínimo que puede seleccionar (default = 0 si opcional)
+
+    @Column
+    private Integer maxQuantity; // Máximo que puede seleccionar
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;

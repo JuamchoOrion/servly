@@ -1,6 +1,7 @@
 package co.edu.uniquindio.servly.model.entity;
 
 import co.edu.uniquindio.servly.model.enums.OrderType;
+import co.edu.uniquindio.servly.model.enums.OrderTableState;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
@@ -30,6 +31,10 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderType orderType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderTableState status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Order_detail> orderDetailList;

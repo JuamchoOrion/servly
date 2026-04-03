@@ -12,4 +12,14 @@ import java.util.List;
 public interface ItemStockRepository extends JpaRepository<ItemStock, Long> {
     List<ItemStock> findByInventoryId(Long inventoryId);
     Page<ItemStock> findByInventoryId(Long inventoryId, Pageable pageable);
+
+    /**
+     * Obtiene todos los stocks de un item específico
+     */
+    List<ItemStock> findByItem(co.edu.uniquindio.servly.model.entity.Item item);
+
+    /**
+     * Obtiene todos los stocks de un item por su ID
+     */
+    List<ItemStock> findByItem_Id(Long itemId);
 }

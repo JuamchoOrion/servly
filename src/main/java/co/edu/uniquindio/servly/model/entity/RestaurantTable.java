@@ -34,8 +34,8 @@ import java.time.LocalDateTime;
 public class RestaurantTable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
     @Column(name = "table_number", nullable = false, unique = true)
     private Integer tableNumber;

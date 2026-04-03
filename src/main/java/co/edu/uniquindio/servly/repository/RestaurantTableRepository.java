@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface RestaurantTableRepository extends JpaRepository<RestaurantTable, String> {
-
-    Optional<RestaurantTable> findByTableNumber(Integer tableNumber);
+public interface RestaurantTableRepository extends JpaRepository<RestaurantTable, Integer> {
 
     List<RestaurantTable> findByStatus(RestaurantTable.TableStatus status);
 
     boolean existsByTableNumber(Integer tableNumber);
+
+    Optional<RestaurantTable> findByTableNumber(Integer tableNumber);
 
     @Query("SELECT rt FROM RestaurantTable rt ORDER BY rt.tableNumber ASC")
     List<RestaurantTable> findAllOrderedByTableNumber();

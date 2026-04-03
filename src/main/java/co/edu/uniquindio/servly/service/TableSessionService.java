@@ -44,7 +44,7 @@ public class TableSessionService {
             throw new AuthException("Número de mesa inválido");
         }
 
-        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+        RestaurantTable table = restaurantTableRepository.findById(tableNumber)
                 .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
 
         Optional<TableSession> existing = sessionRepository.findByRestaurantTableAndActiveTrue(table);
@@ -77,7 +77,7 @@ public class TableSessionService {
     }
 
     public MessageResponse closeSession(Integer tableNumber) {
-        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+        RestaurantTable table = restaurantTableRepository.findById(tableNumber)
                 .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
 
         TableSession session = sessionRepository.findByRestaurantTableAndActiveTrue(table)
@@ -94,7 +94,7 @@ public class TableSessionService {
 
     @Transactional(readOnly = true)
     public boolean isTableActive(Integer tableNumber) {
-        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+        RestaurantTable table = restaurantTableRepository.findById(tableNumber)
                 .orElse(null);
         if (table == null) return false;
         return sessionRepository.existsByRestaurantTableAndActiveTrue(table);
