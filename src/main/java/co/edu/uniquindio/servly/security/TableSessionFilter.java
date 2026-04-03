@@ -46,13 +46,33 @@ public class TableSessionFilter extends OncePerRequestFilter {
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Obtener token de Cookie o Header Authorization
+        String token = null;
+
+        // Intentar obtener de Cookie primero
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if ("sessionToken".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // Si no está en cookie, intentar obtener del header Authorization
+        if (token == null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (token == null) {
+            log.debug("No se encontró sessionToken en cookie o Authorization header");
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7);
 
         if (!tableJwtProvider.isValidTableToken(token)) {
             log.debug("Token en /api/client/ no es TABLE_SESSION");

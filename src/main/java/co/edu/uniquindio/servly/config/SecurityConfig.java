@@ -127,6 +127,9 @@ public class SecurityConfig {
                                 "/api/auth/refresh-token",
                                 "/api/auth/logout",
                                 "/api/client/session",       // Escaneo QR
+                                "/api/products/active",      // Menú digital para clientes
+                                "/api/menu/products",        // Menú con paginación
+                                "/api/products/**",          // Detalles de productos
                                 "/oauth2/**",
                                 "/login/oauth2/**"
                         ).permitAll()

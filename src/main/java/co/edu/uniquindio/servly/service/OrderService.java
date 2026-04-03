@@ -46,7 +46,7 @@ public class OrderService {
     public OrderDTO createTableOrder(CreateTableOrderRequest request) {
         log.info("Creando orden para mesa: {}", request.getTableNumber());
 
-        RestaurantTable table = tableRepository.findById(request.getTableNumber())
+        RestaurantTable table = tableRepository.findByTableNumber(request.getTableNumber())
                 .orElseThrow(() -> new NotFoundException("Mesa no encontrada: " + request.getTableNumber()));
 
         List<Order_detail> details = new java.util.ArrayList<>();
@@ -71,13 +71,14 @@ public class OrderService {
                     .product(product)
                     .build();
 
-
             details.add(detail);
             total = total.add(detail.getSubtotal());
         }
 
+        // Crear y construir todas las relaciones ANTES de persistir
         TableSource tableSource = new TableSource();
         tableSource.setRestaurantTable(table);
+        tableSource.setTableNumber(table.getTableNumber());
 
         Order order = Order.builder()
                 .date(LocalDate.now())
@@ -88,8 +89,10 @@ public class OrderService {
                 .orderDetailList(details)
                 .build();
 
+        // Asignar orden a cada detalle (relación bidireccional)
         details.forEach(d -> d.setOrder(order));
 
+        // Guardar orden (cascada debería manejar tableSource y details)
         Order savedOrder = orderRepository.save(order);
         log.info("Orden creada: {}", savedOrder.getId());
 
@@ -294,7 +297,11 @@ public class OrderService {
         Integer tableNumber = null;
         if (order.getOrderType().equals(OrderType.TABLE) && order.getSource() instanceof TableSource) {
             TableSource ts = (TableSource) order.getSource();
-            tableNumber = ts.getRestaurantTable().getTableNumber();
+            // Usar el tableNumber directamente de TableSource, no de la relación
+            tableNumber = ts.getTableNumber();
+            if (tableNumber == null && ts.getRestaurantTable() != null) {
+                tableNumber = ts.getRestaurantTable().getTableNumber();
+            }
         }
 
         return OrderDTO.builder()
@@ -338,21 +345,43 @@ public class OrderService {
      * Valida que haya items suficientes para la receta con variaciones
      */
     private void validateRecipeWithVariations(Product product, Integer quantity, java.util.Map<Long, Integer> itemQuantityOverrides) {
-        if (product.getRecipe() == null || product.getRecipe().getItemDetailList().isEmpty()) {
-            throw new ValidationException("Producto sin receta");
+        log.debug("Validando receta para producto: {} ({}) con cantidad: {}", product.getId(), product.getName(), quantity);
+
+        // Si no tiene receta, se permite (producto simple sin items)
+        if (product.getRecipe() == null) {
+            log.debug("Producto {} no tiene receta asignada (producto simple)", product.getId());
+            return;
+        }
+
+        if (product.getRecipe().getItemDetailList() == null || product.getRecipe().getItemDetailList().isEmpty()) {
+            log.debug("Receta del producto {} está vacía", product.getId());
+            return;
         }
 
         for (ItemDetail itemDetail : product.getRecipe().getItemDetailList()) {
+            if (itemDetail == null || itemDetail.getItem() == null) {
+                log.error("ItemDetail o Item nulo en receta de producto: {}", product.getId());
+                throw new ValidationException("Receta inválida: item detalles incompletos");
+            }
+
+            Item item = itemDetail.getItem();
             // Obtener cantidad elegida o usar la cantidad base
-            Integer selectedQuantity = itemQuantityOverrides != null && itemQuantityOverrides.containsKey(itemDetail.getItem().getId())
-                    ? itemQuantityOverrides.get(itemDetail.getItem().getId())
+            Integer selectedQuantity = itemQuantityOverrides != null && itemQuantityOverrides.containsKey(item.getId())
+                    ? itemQuantityOverrides.get(item.getId())
                     : itemDetail.getQuantity();
 
+            Integer requiredQty = selectedQuantity * quantity;
+            log.debug("Validando disponibilidad de item {} ({}) - Requerido: {} (base: {}, qty: {})",
+                    item.getId(), item.getName(), requiredQty, selectedQuantity, quantity);
+
             // Validar disponibilidad
-            if (!availabilityService.isItemAvailable(itemDetail.getItem().getId(), selectedQuantity * quantity)) {
-                throw new ValidationException("No hay " + itemDetail.getItem().getName() + " suficientes");
+            if (!availabilityService.isItemAvailable(item.getId(), requiredQty)) {
+                String itemName = item.getName() != null ? item.getName() : "Item " + item.getId();
+                log.warn("Stock insuficiente para item: {} (ID: {}, Requerido: {})", itemName, item.getId(), requiredQty);
+                throw new ValidationException("No hay " + itemName + " suficientes en inventario");
             }
         }
+        log.debug("Validación de receta exitosa para producto: {}", product.getId());
     }
 
     /**
@@ -362,5 +391,17 @@ public class OrderService {
     private BigDecimal calculatePriceWithVariations(Product product, java.util.Map<Long, Integer> itemQuantityOverrides) {
         // El precio es fijo del producto, las variaciones no lo modifican
         return product.getPrice();
+    }
+
+    /**
+     * Crea orden de mesa desde cliente (solo necesita tableNumber)
+     * Convierte CreateClientOrderRequest a CreateTableOrderRequest
+     */
+    public OrderDTO createTableOrderFromClient(Integer tableNumber, CreateClientOrderRequest request) {
+        CreateTableOrderRequest tableOrderRequest = CreateTableOrderRequest.builder()
+                .tableNumber(tableNumber)
+                .items(request.getProducts())
+                .build();
+        return createTableOrder(tableOrderRequest);
     }
 }

@@ -40,12 +40,18 @@ public class TableSessionService {
     private final TableJwtProvider tableJwtProvider;
 
     public TableSessionResponse openSession(Integer tableNumber) {
+        log.debug("=== Iniciando openSession para mesa: {}", tableNumber);
         if (tableNumber == null || tableNumber < 1) {
             throw new AuthException("Número de mesa inválido");
         }
 
-        RestaurantTable table = restaurantTableRepository.findById(tableNumber)
-                .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
+        log.debug("Buscando mesa {} en la BD", tableNumber);
+        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+                .orElseThrow(() -> {
+                    log.error("Mesa número {} no existe en la base de datos", tableNumber);
+                    return new AuthException("Mesa número " + tableNumber + " no existe");
+                });
+        log.debug("Mesa encontrada: id={}, number={}", table.getId(), table.getTableNumber());
 
         Optional<TableSession> existing = sessionRepository.findByRestaurantTableAndActiveTrue(table);
 
@@ -60,6 +66,7 @@ public class TableSessionService {
         // Guardar con token vacío para obtener el ID generado
         TableSession session = TableSession.builder()
                 .restaurantTable(table)
+                .tableNumber(tableNumber)
                 .sessionToken("")
                 .active(true)
                 .expiresAt(expiresAt)
@@ -77,7 +84,7 @@ public class TableSessionService {
     }
 
     public MessageResponse closeSession(Integer tableNumber) {
-        RestaurantTable table = restaurantTableRepository.findById(tableNumber)
+        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
                 .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
 
         TableSession session = sessionRepository.findByRestaurantTableAndActiveTrue(table)
@@ -94,7 +101,7 @@ public class TableSessionService {
 
     @Transactional(readOnly = true)
     public boolean isTableActive(Integer tableNumber) {
-        RestaurantTable table = restaurantTableRepository.findById(tableNumber)
+        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
                 .orElse(null);
         if (table == null) return false;
         return sessionRepository.existsByRestaurantTableAndActiveTrue(table);

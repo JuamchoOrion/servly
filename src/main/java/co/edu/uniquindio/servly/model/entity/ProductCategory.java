@@ -3,6 +3,7 @@ package co.edu.uniquindio.servly.model.entity;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class ProductCategory {
     private Boolean active;
 
     @OneToMany(mappedBy = "category")
+    @JsonIgnore
     private List<Product> products;
 
 }

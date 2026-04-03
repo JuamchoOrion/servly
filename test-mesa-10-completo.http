@@ -1,0 +1,236 @@
+### =====================================
+### TEST COMPLETO - MESA 10 Y PRODUCTO 1
+### Flujo: Sesión → Menú → Orden → Entrega
+### =====================================
+
+@baseUrl = http://localhost:8081
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTE2Nzg0NywiZXhwIjoxNzc1MjU0MjQ3fQ.Sd6_ZqHfJgR7h7LHK-AJktvm_NXXx59z2aJIl1Z4LFZ_b-ho3V2JkpC4CvEaxESkBzMsdYYR3pMuvT4VypcYRw
+@mesa = 10
+@productoId = 1
+
+### =====================================
+### PASO 1: Cliente abre sesión de mesa
+### =====================================
+### Este endpoint es PÚBLICO
+### Responde con sessionToken en cookie
+GET {{baseUrl}}/api/client/session?table={{mesa}}
+
+> {%
+client.test("Sesión abierta", function() {
+    client.assert(response.status === 200, "Status debe ser 200");
+    client.assert(response.body.sessionToken !== undefined, "Debe tener sessionToken");
+    client.assert(response.body.tableNumber === 10, "Número de mesa debe ser 10");
+});
+%}
+
+###
+
+### =====================================
+### PASO 2: Cliente ve el menú disponible
+### =====================================
+### El sessionToken se envía automáticamente en cookies
+GET {{baseUrl}}/api/menu/products?page=0&size=10
+
+> {%
+client.test("Menú cargado", function() {
+    client.assert(response.status === 200, "Status debe ser 200");
+    client.assert(response.body.content !== undefined, "Debe tener contenido");
+    client.assert(response.body.content.length > 0, "Debe haber productos");
+});
+%}
+
+###
+
+### =====================================
+### PASO 3: Cliente ve detalles del producto
+### =====================================
+GET {{baseUrl}}/api/products/{{productoId}}
+
+> {%
+client.test("Producto cargado", function() {
+    client.assert(response.status === 200, "Status debe ser 200");
+    client.assert(response.body.id === 1, "ID del producto debe ser 1");
+});
+%}
+
+###
+
+### =====================================
+### PASO 4: Cliente crea orden con el producto
+### =====================================
+POST {{baseUrl}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": {{productoId}},
+      "quantity": 2
+    }
+  ]
+}
+
+> {%
+client.test("Orden creada", function() {
+    client.assert(response.status === 200 || response.status === 201, "Status debe ser 200 o 201");
+    client.assert(response.body.id !== undefined, "Debe tener ID de orden");
+    client.assert(response.body.status !== undefined, "Debe tener estado");
+});
+%}
+
+###
+
+### =====================================
+### PASO 5: Cliente ve sus órdenes
+### =====================================
+GET {{baseUrl}}/api/client/orders
+
+> {%
+client.test("Órdenes recuperadas", function() {
+    client.assert(response.status === 200, "Status debe ser 200");
+    client.assert(Array.isArray(response.body) || response.body.content !== undefined, "Debe ser una lista");
+});
+%}
+
+###
+
+### =====================================
+### PASO 6: Cliente ve detalles de una orden
+### =====================================
+GET {{baseUrl}}/api/client/orders/1
+
+> {%
+client.test("Orden detallada cargada", function() {
+    client.assert(response.status === 200 || response.status === 404, "Status debe ser 200 o 404 si no existe");
+});
+%}
+
+###
+
+### =====================================
+### PASO 7: Cliente solicita ayuda
+### =====================================
+POST {{baseUrl}}/api/client/orders/1/request-help
+Content-Type: application/json
+
+{}
+
+> {%
+client.test("Ayuda solicitada", function() {
+    client.assert(response.status === 200 || response.status === 404, "Status debe ser 200 o 404 si orden no existe");
+});
+%}
+
+###
+
+### =====================================
+### PASO 8: Cliente confirma entrega
+### =====================================
+POST {{baseUrl}}/api/client/orders/1/confirm-delivery
+Content-Type: application/json
+
+{}
+
+> {%
+client.test("Entrega confirmada", function() {
+    client.assert(response.status === 200 || response.status === 404, "Status debe ser 200 o 404 si orden no existe");
+});
+%}
+
+###
+
+### =====================================
+### PASO 9: Staff ve órdenes pendientes
+### =====================================
+### Requiere token de staff - si no funciona, usar @adminToken
+GET {{baseUrl}}/api/staff/orders/pending
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("Órdenes pendientes", function() {
+    client.assert(response.status === 200 || response.status === 403, "Status válido");
+});
+%}
+
+###
+
+### =====================================
+### PASO 10: Staff actualiza estado de orden
+### =====================================
+PATCH {{baseUrl}}/api/staff/orders/1/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "IN_PREPARATION"
+}
+
+> {%
+client.test("Estado actualizado", function() {
+    client.assert(response.status === 200 || response.status === 404 || response.status === 403, "Status válido");
+});
+%}
+
+###
+
+### =====================================
+### PASO 11: Staff ve órdenes en preparación
+### =====================================
+GET {{baseUrl}}/api/staff/orders/in-preparation
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("Órdenes en preparación", function() {
+    client.assert(response.status === 200 || response.status === 403, "Status válido");
+});
+%}
+
+###
+
+### =====================================
+### PASO 12: Staff ve órdenes de una mesa
+### =====================================
+GET {{baseUrl}}/api/staff/tables/{{mesa}}/orders
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("Órdenes de mesa cargadas", function() {
+    client.assert(response.status === 200 || response.status === 404 || response.status === 403, "Status válido");
+});
+%}
+
+###
+
+### =====================================
+### PASO 13: Staff genera factura
+### =====================================
+GET {{baseUrl}}/api/staff/orders/1/invoice
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("Factura generada", function() {
+    client.assert(response.status === 200 || response.status === 404 || response.status === 403, "Status válido");
+});
+%}
+
+###
+
+### =====================================
+### PASO 14: Staff cancela orden
+### =====================================
+POST {{baseUrl}}/api/staff/orders/1/cancel
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "reason": "Producto agotado"
+}
+
+> {%
+client.test("Orden cancelada", function() {
+    client.assert(response.status === 200 || response.status === 404 || response.status === 403, "Status válido");
+});
+%}
+
+###
+

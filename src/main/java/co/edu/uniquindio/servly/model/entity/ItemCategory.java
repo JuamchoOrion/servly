@@ -3,6 +3,7 @@ package co.edu.uniquindio.servly.model.entity;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +38,7 @@ public class ItemCategory {
     private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "itemCategory", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Item> items;
 }
 

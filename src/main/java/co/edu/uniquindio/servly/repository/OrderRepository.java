@@ -21,7 +21,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query(value = """
         SELECT o.* FROM orders o 
         INNER JOIN order_source os ON o.source_id = os.id 
-        INNER JOIN restaurant_table rt ON os.restaurant_table_id = rt.id 
+        INNER JOIN table_source ts ON os.id = ts.id 
+        INNER JOIN restaurant_tables rt ON ts.restaurant_table_id = rt.id 
         WHERE rt.table_number = :tableNumber
         """, nativeQuery = true)
     List<Order> findByTableNumber(@Param("tableNumber") Integer tableNumber);

@@ -47,14 +47,22 @@ public class OrderController {
      * El cliente escanea QR, obtiene sessionToken y confirma pedido
      *
      * Seguridad: TableSessionFilter valida sessionToken y asigna ROLE_CLIENT
-     * Solo puede crear orden para su mesa (validado en servicio)
+     * El tableNumber se obtiene del JWT de sesión, no del body
      */
     @PostMapping("/api/client/orders")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<OrderDTO> createTableOrder(
-            @Valid @RequestBody CreateTableOrderRequest request) {
-        log.info("Cliente creando orden para mesa: {}", request.getTableNumber());
-        OrderDTO order = orderService.createTableOrder(request);
+            @Valid @RequestBody CreateClientOrderRequest request,
+            org.springframework.security.core.Authentication auth) {
+
+        // Extraer tableNumber del principal: "table:XX"
+        String principal = (String) auth.getPrincipal();
+        Integer tableNumber = Integer.parseInt(principal.split(":")[1]);
+
+        log.info("Cliente creando orden para mesa: {}", tableNumber);
+
+        // Pasar al servicio con tableNumber
+        OrderDTO order = orderService.createTableOrderFromClient(tableNumber, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
@@ -65,9 +73,11 @@ public class OrderController {
     @GetMapping("/api/client/orders")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<List<OrderDTO>> getMyOrders(
-            @RequestParam Integer tableNumber) {
+            org.springframework.security.core.Authentication auth) {
+        // Extraer tableNumber del principal: "table:XX"
+        String principal = (String) auth.getPrincipal();
+        Integer tableNumber = Integer.parseInt(principal.split(":")[1]);
         log.info("Cliente consultando órdenes de mesa: {}", tableNumber);
-        // Servicio valida que tableNumber coincide con el del token
         List<OrderDTO> orders = orderService.getActiveOrdersByTableNumber(tableNumber);
         return ResponseEntity.ok(orders);
     }
@@ -87,13 +97,29 @@ public class OrderController {
     /**
      * CLIENTE: Solicitar ayuda del mesero (sin login, solo sessionToken)
      * Genera alerta para que mesero acuda a la mesa
+     * Validación: Extrae tableNumber del token y valida que orden pertenece a esa mesa
      */
     @PostMapping("/api/client/orders/{id}/request-help")
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<MessageResponse> requestHelp(@PathVariable Long id) {
-        log.info("Cliente solicitando ayuda para orden: {}", id);
-        // TODO: Integrar con sistema de notificaciones/alertas para mesero (WebSocket, SMS, etc)
-        return ResponseEntity.ok(new MessageResponse("Mesero notificado. Ayuda en camino."));
+    public ResponseEntity<MessageResponse> requestHelp(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication auth) {
+
+        // Extraer tableNumber del principal: "table:XX"
+        String principal = (String) auth.getPrincipal();
+        Integer tableNumber = Integer.parseInt(principal.split(":")[1]);
+
+        // Validar que la orden pertenece a la mesa del cliente
+        OrderDTO order = orderService.getOrderById(id);
+        if (!order.getTableNumber().equals(tableNumber)) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("La orden no pertenece a esta mesa"));
+        }
+
+        log.info("Alerta de ayuda registrada para mesa: {}, orden: {}", tableNumber, id);
+        // TODO: Integrar con WebSocket para notificar mesero en tiempo real
+        return ResponseEntity.ok(new MessageResponse(
+                "Ayuda solicitada. El mesero acudirá en breve a su mesa."));
     }
 
     /**

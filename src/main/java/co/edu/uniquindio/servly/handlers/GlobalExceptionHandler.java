@@ -157,8 +157,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MessageResponse> handleGenericException(
             Exception ex, HttpServletRequest request) {
-        log.error("Error inesperado en {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.error(" Error inesperado en {}: {}", request.getRequestURI(), ex.getMessage());
+        log.error("Detalles del error: ", ex);
         return ResponseEntity.internalServerError()
-                .body(new MessageResponse("Error interno del servidor"));
+                .body(new MessageResponse("Error interno del servidor: " + ex.getClass().getSimpleName()));
     }
 }

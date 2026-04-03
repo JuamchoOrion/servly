@@ -70,11 +70,10 @@ public class ProductAvailabilityService {
      * @return true si hay stock suficiente
      */
     public boolean isItemAvailable(Long itemId, Integer requiredQuantity) {
-        // Obtener el item (necesitamos el repositorio)
-        // Por ahora usamos el método getAvailableStock que suma stocks
         Integer available = itemStockRepository.findByItem_Id(itemId).stream()
                 .mapToInt(ItemStock::getQuantity)
                 .sum();
+        log.debug("Item {} - Disponible: {}, Requerido: {}", itemId, available, requiredQuantity);
         return available >= requiredQuantity;
     }
 
