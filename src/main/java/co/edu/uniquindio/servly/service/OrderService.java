@@ -165,16 +165,22 @@ public class OrderService {
      */
     @Transactional
     public void confirmPaymentAndDeductInventory(Long orderId) {
-        log.info("Descontando inventario para orden: {}", orderId);
+        log.info("Confirmando pago para orden: {}", orderId);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Orden no encontrada: " + orderId));
 
+        // Cambiar estado a SERVED (máquina de estados)
+        order.setStatus(OrderTableState.SERVED);
+        orderRepository.save(order);
+        log.info("Estado cambió a SERVED para orden: {}", orderId);
+
+        // Descontar inventario
         for (Order_detail detail : order.getOrderDetailList()) {
             availabilityService.deductInventoryForProduct(detail.getProduct(), detail.getQuantity());
         }
 
-        log.info("Inventario descontado: {}", orderId);
+        log.info("Pago confirmado e inventario descontado para orden: {}", orderId);
     }
 
     /**

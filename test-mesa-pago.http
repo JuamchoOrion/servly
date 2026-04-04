@@ -62,13 +62,3 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/api/staff/tables/{{tableNumber}}/orders
 Authorization: Bearer {{adminToken}}
 
-###
-### PASO 10: Admin actualiza estado de orden
-###
-PUT {{baseUrl}}/api/staff/orders/1/status
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "status": "IN_PREPARATION"
-}
