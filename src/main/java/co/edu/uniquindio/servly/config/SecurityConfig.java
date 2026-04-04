@@ -164,9 +164,9 @@ public class SecurityConfig {
                         )
                 )
                 .authenticationProvider(authenticationProvider())
-                // TableSessionFilter primero (rutas de cliente), luego JWT (rutas de staff)
-                .addFilterBefore(tableSessionFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, TableSessionFilter.class)
+                // JWT primero (rutas de staff), luego TableSessionFilter (rutas de cliente)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(tableSessionFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 

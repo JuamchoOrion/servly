@@ -1,0 +1,124 @@
+### Variables
+@baseUrl = http://localhost:8081
+@tableNumber = 10
+@productId = 1
+
+### ============ PASO 1: ABRIR SESIÓN DE MESA ============
+
+### 1.1 Cliente abre sesión (escanea QR)
+POST {{baseUrl}}/api/client/session
+Content-Type: application/json
+
+{
+  "tableNumber": {{tableNumber}}
+}
+
+### 2.2 Guardar el sessionToken del response anterior
+# sessionToken = eyJhbGc... (copiar del response de arriba)
+
+### ============ PASO 2: VER PRODUCTOS DISPONIBLES ============
+
+### 2.1 Consultar productos activos (sin auth, solo para ver)
+GET {{baseUrl}}/api/products/active?page=0&size=10
+
+### ============ PASO 3: CREAR ORDEN (CLIENTE) ============
+
+### 3.1 Crear orden de mesa (usando sessionToken)
+POST {{baseUrl}}/api/client/orders
+Content-Type: application/json
+Cookie: sessionToken=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0YWJsZToxMCIsInRhYmxlTnVtYmVyIjoxMCwic2Vzc2lvbklkIjoiMTI3NzFmNGItYzljOS00OGQ3LTg0NjItYzk0MGI1YTg3ZTcyIiwidG9rZW5UeXBlIjoiVEFCTEVfU0VTU0lPTiIsImlhdCI6MTc3NTI1MDgzMSwiZXhwIjoxNzc1MjY1MjMxfQ.UxFE2z7SsVCzHFy0Js6T4k1VhRIKDMVXPVFxDXXwWa8vO3nFk0mfG0qbD7xH2J2X9xOJ3Q9b4K1L5mQ0R8nE7Q
+
+{
+  "products": [
+    {
+      "productId": {{productId}},
+      "quantity": 1
+    }
+  ]
+}
+
+### Guardar orderId del response
+
+### ============ PASO 4: VER ORDEN CREADA ============
+
+### 4.1 Consultar orden (cliente ve su orden)
+GET {{baseUrl}}/api/client/orders/1
+Cookie: sessionToken=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0YWJsZToxMCIsInRhYmxlTnVtYmVyIjoxMCwic2Vzc2lvbklkIjoiMTI3NzFmNGItYzljOS00OGQ3LTg0NjItYzk0MGI1YTg3ZTcyIiwidG9rZW5UeXBlIjoiVEFCTEVfU0VTU0lPTiIsImlhdCI6MTc3NTI1MDgzMSwiZXhwIjoxNzc1MjY1MjMxfQ.UxFE2z7SsVCzHFy0Js6T4k1VhRIKDMVXPVFxDXXwWa8vO3nFk0mfG0qbD7xH2J2X9xOJ3Q9b4K1L5mQ0R8nE7Q
+
+### ============ PASO 5: MESERO VE ÓRDENES PENDIENTES ============
+
+### 5.1 Cocina ve órdenes pendientes (requiere User JWT)
+# Reemplaza {user_jwt_token} con un JWT válido de usuario con rol COCINA
+GET {{baseUrl}}/api/staff/orders/pending
+Authorization: Bearer {user_jwt_token}
+
+### ============ PASO 6: MESERO/CASHIER CONFIRMA PAGO ⭐ ============
+
+### 6.1 Confirmar pago y DESCONTAR INVENTARIO
+# 🔴 Este es el endpoint que descuenta el stock
+# Debe llamarse DESPUÉS de que el cliente pague
+POST {{baseUrl}}/api/staff/orders/1/confirm-payment
+Authorization: Bearer {user_jwt_token}
+
+### Respuesta esperada:
+# {
+#   "message": "Pago confirmado. Inventario descontado."
+# }
+
+### ============ PASO 7: ACTUALIZAR ESTADO A PREPARACIÓN ============
+
+### 7.1 Cocina marca orden como "en preparación"
+PATCH {{baseUrl}}/api/staff/orders/1/status
+Authorization: Bearer {user_jwt_token}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### ============ PASO 8: ACTUALIZAR ESTADO A SERVIDO ============
+
+### 8.1 Mesero marca orden como "servida"
+PATCH {{baseUrl}}/api/staff/orders/1/status
+Authorization: Bearer {user_jwt_token}
+Content-Type: application/json
+
+{
+  "status": "SERVED"
+}
+
+### ============ PASO 9: CLIENTE CONFIRMA ENTREGA ============
+
+### 9.1 Cliente confirma que recibió la orden
+PATCH {{baseUrl}}/api/client/orders/1/confirm-delivery
+Cookie: sessionToken=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0YWJsZToxMCIsInRhYmxlTnVtYmVyIjoxMCwic2Vzc2lvbklkIjoiMTI3NzFmNGItYzljOS00OGQ3LTg0NjItYzk0MGI1YTg3ZTcyIiwidG9rZW5UeXBlIjoiVEFCTEVfU0VTU0lPTiIsImlhdCI6MTc3NTI1MDgzMSwiZXhwIjoxNzc1MjY1MjMxfQ.UxFE2z7SsVCzHFy0Js6T4k1VhRIKDMVXPVFxDXXwWa8vO3nFk0mfG0qbD7xH2J2X9xOJ3Q9b4K1L5mQ0R8nE7Q
+
+### ============ VERIFICACIÓN: CHECAR STOCK DESCONTADO ============
+
+### 10.1 Ver inventario del item 1 (debería estar reducido)
+# Nota: Necesita endpoint de consulta de stock
+# GET {{baseUrl}}/api/items/1/stock
+
+### ============ NOTAS IMPORTANTES ============
+
+# 1. CAMBIAR TOKENS:
+#    - Reemplaza {user_jwt_token} con un JWT de usuario real
+#    - Obtén sessionToken del paso 1 y úsalo en los demás pasos
+#
+# 2. EL STOCK SE DESCUENTA EN PASO 6:
+#    - Al crear orden (paso 3): Solo VALIDA disponibilidad, no descuenta
+#    - Al confirmar pago (paso 6): DESCUENTA el stock
+#
+# 3. FLUJO COMPLETO:
+#    PENDING (creación) → PENDING (pagado) → IN_PREPARATION → SERVED
+#                        ⭐ AQUÍ DESCUENTA
+#
+# 4. ANTES (PROBLEMA):
+#    - Podrías crear 100 órdenes sin descontar stock
+#    - Stock siempre era 300 aunque tenías 100 órdenes pendientes
+#
+# 5. AHORA (SOLUCIONADO):
+#    - Crears orden → Stock valida pero no descuenta (aún es 300)
+#    - Pagas → Stock descuenta (ahora es 299)
+#    - Consistencia garantizada ✅
+

@@ -34,6 +34,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final RestaurantTableRepository tableRepository;
+    private final TableSourceRepository tableSourceRepository;
     private final InventoryMetricsService metricsService;
     private final ProductAvailabilityService availabilityService;
 
@@ -48,6 +49,15 @@ public class OrderService {
 
         RestaurantTable table = tableRepository.findByTableNumber(request.getTableNumber())
                 .orElseThrow(() -> new NotFoundException("Mesa no encontrada: " + request.getTableNumber()));
+
+        // Obtener o crear TableSource (debe existir solo uno por mesa)
+        TableSource tableSource = tableSourceRepository.findByTableNumber(request.getTableNumber())
+                .orElseGet(() -> {
+                    TableSource newTableSource = new TableSource();
+                    newTableSource.setRestaurantTable(table);
+                    newTableSource.setTableNumber(request.getTableNumber());
+                    return tableSourceRepository.save(newTableSource);
+                });
 
         List<Order_detail> details = new java.util.ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
@@ -75,11 +85,6 @@ public class OrderService {
             total = total.add(detail.getSubtotal());
         }
 
-        // Crear y construir todas las relaciones ANTES de persistir
-        TableSource tableSource = new TableSource();
-        tableSource.setRestaurantTable(table);
-        tableSource.setTableNumber(table.getTableNumber());
-
         Order order = Order.builder()
                 .date(LocalDate.now())
                 .total(total)
@@ -92,7 +97,7 @@ public class OrderService {
         // Asignar orden a cada detalle (relación bidireccional)
         details.forEach(d -> d.setOrder(order));
 
-        // Guardar orden (cascada debería manejar tableSource y details)
+        // Guardar orden
         Order savedOrder = orderRepository.save(order);
         log.info("Orden creada: {}", savedOrder.getId());
 

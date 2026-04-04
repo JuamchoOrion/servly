@@ -215,6 +215,22 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
+    /**
+     * CASHIER/MESERO: Confirmar pago y descontar inventario
+     * Se debe llamar DESPUÉS de que el cliente pague exitosamente
+     * Requiere: User login con rol CASHIER, MESERO o ADMIN
+     *
+     * Descuenta el stock del inventario según los items de la receta
+     * IMPORTANTE: Solo debe llamarse UNA VEZ por orden
+     */
+    @PostMapping("/api/staff/orders/{id}/confirm-payment")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MESERO', 'CASHIER')")
+    public ResponseEntity<MessageResponse> confirmPayment(@PathVariable Long id) {
+        log.info("Confirmando pago y descontando inventario para orden: {}", id);
+        orderService.confirmPaymentAndDeductInventory(id);
+        return ResponseEntity.ok(new MessageResponse("Pago confirmado. Inventario descontado."));
+    }
+
     // ============ DELIVERY - ÓRDENES DE ENTREGA (Público, sin autenticación) ============
 
     /**

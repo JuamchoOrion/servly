@@ -1,0 +1,74 @@
+### Variables
+@baseUrl = http://localhost:8081
+@tableNumber = 10
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTI2MzMwOSwiZXhwIjoxNzc1MzQ5NzA5fQ.WIWMiF1m3nylVKoo_Ollgt4Nznx1XxftcyGSNOnQwtIbBHV0hjhXNg9y0sTCJz4OxO_LCGWF2T0J7mpkq41fsQ
+
+###
+### PASO 1: Cliente abre sesión de mesa (escanea QR)
+###
+GET {{baseUrl}}/api/client/session?table={{tableNumber}}
+
+###
+### PASO 2: Cliente obtiene productos disponibles del menú
+###
+GET {{baseUrl}}/api/menu/products?page=0&size=10
+
+###
+### PASO 3: Cliente crea una orden
+###
+POST {{baseUrl}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ]
+}
+
+###
+### PASO 4: Cliente consulta sus órdenes (obtiene el ID de la orden)
+###
+GET {{baseUrl}}/api/client/orders
+
+###
+### PASO 5: Cliente obtiene detalle de una orden específica
+###
+GET {{baseUrl}}/api/client/orders/1
+
+###
+### PASO 6: Admin confirma pago de la orden
+###
+POST {{baseUrl}}/api/staff/orders/1/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+###
+### PASO 7: Admin obtiene órdenes pendientes
+###
+GET {{baseUrl}}/api/staff/orders/pending
+Authorization: Bearer {{adminToken}}
+
+###
+### PASO 8: Admin obtiene órdenes en preparación
+###
+GET {{baseUrl}}/api/staff/orders/in-preparation
+Authorization: Bearer {{adminToken}}
+
+###
+### PASO 9: Admin obtiene órdenes de una mesa específica
+###
+GET {{baseUrl}}/api/staff/tables/{{tableNumber}}/orders
+Authorization: Bearer {{adminToken}}
+
+###
+### PASO 10: Admin actualiza estado de orden
+###
+PUT {{baseUrl}}/api/staff/orders/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
