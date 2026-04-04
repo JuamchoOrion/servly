@@ -1,0 +1,249 @@
+### Variables
+@host = http://localhost:8081
+@tableNumber = 10
+@productId1 = 1
+@productId2 = 2
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTI2MzMwOSwiZXhwIjoxNzc1MzQ5NzA5fQ.WIWMiF1m3nylVKoo_Ollgt4Nznx1XxftcyGSNOnQwtIbBHV0hjhXNg9y0sTCJz4OxO_LCGWF2T0J7mpkq41fsQ
+
+### ============================================
+### FLUJO COMPLETO: CLIENTE ORDENA Y PAGA
+### ============================================
+
+### 1. CLIENTE: Abrir sesión de mesa (Escanear QR)
+GET {{host}}/api/client/session?table={{tableNumber}}
+
+### Guardar el sessionToken de la respuesta anterior (está en cookie automáticamente)
+
+### 2. CLIENTE: Obtener menú con paginación
+GET {{host}}/api/menu/products?page=0&size=10
+
+### 3. CLIENTE: Crear orden
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": {{productId1}},
+      "quantity": 1
+    }
+  ]
+}
+
+### Guardar el orderId de la respuesta (ej: 5)
+
+### 4. CLIENTE: Verificar estado (PENDING)
+GET {{host}}/api/client/orders/5
+
+### 5. CLIENTE: Ver todas mis órdenes
+GET {{host}}/api/client/orders
+
+### ============================================
+### FLUJO ADMIN/STAFF: PREPARAR Y PROCESAR PAGO
+### ============================================
+
+### 6. ADMIN: Ver órdenes pendientes
+GET {{host}}/api/staff/orders/pending
+Authorization: Bearer {{adminToken}}
+
+### 7. ADMIN: Cambiar estado a IN_PREPARATION (Cocina comienza)
+POST {{host}}/api/staff/orders/5/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### 8. ADMIN: Ver órdenes en preparación
+GET {{host}}/api/staff/orders/in-preparation
+Authorization: Bearer {{adminToken}}
+
+### 9. ADMIN: Cambiar estado a SERVED (Comida lista)
+POST {{host}}/api/staff/orders/5/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "SERVED"
+}
+
+### 10. ADMIN: Ver órdenes de mesa específica
+GET {{host}}/api/staff/tables/{{tableNumber}}/orders
+Authorization: Bearer {{adminToken}}
+
+### 11. ADMIN: Generar factura (antes de procesar pago)
+GET {{host}}/api/staff/orders/5/invoice
+Authorization: Bearer {{adminToken}}
+
+### 12. ADMIN: Confirmar pago (⭐ CAMBIA AUTOMÁTICAMENTE A PAID)
+POST {{host}}/api/staff/orders/5/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+### 13. VERIFICAR: Estado final es PAID
+GET {{host}}/api/staff/orders/5
+Authorization: Bearer {{adminToken}}
+
+### 14. CLIENTE: Verificar que orden está PAID
+GET {{host}}/api/client/orders/5
+
+### ============================================
+### FLUJO ADICIONAL: MÚLTIPLES PRODUCTOS
+### ============================================
+
+### 15. CLIENTE: Crear orden con varios productos
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": {{productId1}},
+      "quantity": 2
+    },
+    {
+      "productId": {{productId2}},
+      "quantity": 1
+    }
+  ]
+}
+
+### Guardar el nuevo orderId (ej: 6)
+
+### 16. ADMIN: Ver órdenes de mesa
+GET {{host}}/api/staff/tables/{{tableNumber}}/orders
+Authorization: Bearer {{adminToken}}
+
+### 17. ADMIN: Procesar orden más compleja
+POST {{host}}/api/staff/orders/6/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### Esperar un poco...
+
+### 18. ADMIN: Marcar como servida
+POST {{host}}/api/staff/orders/6/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "SERVED"
+}
+
+### 19. ADMIN: Generar factura para orden con múltiples items
+GET {{host}}/api/staff/orders/6/invoice
+Authorization: Bearer {{adminToken}}
+
+### 20. ADMIN: Confirmar pago (PAID automático)
+POST {{host}}/api/staff/orders/6/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### FLUJO CANCELACIÓN
+### ============================================
+
+### 21. CLIENTE: Crear orden de prueba para cancelar
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": {{productId1}},
+      "quantity": 1
+    }
+  ]
+}
+
+### Guardar orderId (ej: 7)
+
+### 22. ADMIN: Cancelar orden (puede desde cualquier estado)
+POST {{host}}/api/staff/orders/7/cancel
+Authorization: Bearer {{adminToken}}
+
+### 23. VERIFICAR: Estado es CANCELLED
+GET {{host}}/api/staff/orders/7
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### VALIDACIONES DE MÁQUINA DE ESTADOS
+### ============================================
+
+### ⚠️ INTENTO INVÁLIDO: Cambiar de PENDING a SERVED (falta IN_PREPARATION)
+POST {{host}}/api/staff/orders/5/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "SERVED"
+}
+### Resultado: ❌ Error - Transición inválida
+
+### ⚠️ INTENTO INVÁLIDO: Cambiar de SERVED a IN_PREPARATION (hacia atrás)
+POST {{host}}/api/staff/orders/5/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
+### Resultado: ❌ Error - No se puede volver atrás
+
+### ⚠️ INTENTO INVÁLIDO: Confirmar pago dos veces
+POST {{host}}/api/staff/orders/5/confirm-payment
+Authorization: Bearer {{adminToken}}
+### Resultado: ❌ Error - Orden no está en SERVED
+
+### ============================================
+### FLUJO CORRECTO DE ESTADOS
+### ============================================
+
+### PENDING → IN_PREPARATION → SERVED → PAID
+###
+### Transiciones válidas:
+### ✅ PENDING → IN_PREPARATION
+### ✅ IN_PREPARATION → SERVED
+### ✅ SERVED → PAID (via confirm-payment)
+### ✅ Cualquier estado → CANCELLED
+###
+### ❌ Cualquier otra transición rechazada
+
+### ============================================
+### NOTAS IMPORTANTES
+### ============================================
+
+### 1. sessionToken (Cliente):
+###    - Se envía automáticamente en cookies
+###    - Válido por 4 horas
+###    - Se obtiene de: GET /api/client/session?table={numero}
+
+### 2. adminToken (Admin/Staff):
+###    - Se envía en header Authorization: Bearer {token}
+###    - Válido por 24 horas
+###    - Necesario para endpoints de /api/staff/...
+
+### 3. confirm-payment:
+###    - Cambia estado a PAID automáticamente
+###    - Solo funciona si estado es SERVED
+###    - No se puede ejecutar dos veces
+###    - Incluye validación de transición de estado
+
+### 4. Máquina de estados:
+###    - Solo hay transiciones hacia adelante
+###    - Cancelación es la excepción (desde cualquier estado)
+###    - Validaciones en OrderService
+
+### ============================================
+### CÓMO USAR ESTE ARCHIVO
+### ============================================
+
+### 1. Abre este archivo en un cliente HTTP (ej: REST Client, Postman, etc)
+### 2. Reemplaza los valores de @host, @tableNumber, @adminToken según tu entorno
+### 3. Ejecuta los endpoints en orden (1 → 2 → 3, etc)
+### 4. Guarda valores de respuesta para usar en siguientes requests
+### 5. Observa cómo cambian los estados de las órdenes
+

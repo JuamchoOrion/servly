@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * IMPORTANTE: Cliente elige PRODUCTOS (no items)
  * Cada producto tiene RECIPE con ITEM_DETAIL_LIST
  * Validar disponibilidad ANTES de crear
- * Descontar items DESPUÉS de pagar
+ * Descontar items AL CAMBIAR A SERVED
  */
 @Service
 @RequiredArgsConstructor
@@ -161,26 +161,28 @@ public class OrderService {
     }
 
     /**
-     * DESCUENTA INVENTARIO cuando pasa a IN_PREPARATION
+     * Confirma el pago y cambia el estado a PAID
+     * Solo ejecuta si la orden está en estado SERVED
+     * El descuento de inventario se realiza cuando la orden cambia a SERVED
      */
     @Transactional
-    public void confirmPaymentAndDeductInventory(Long orderId) {
+    public OrderDTO confirmPayment(Long orderId) {
         log.info("Confirmando pago para orden: {}", orderId);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Orden no encontrada: " + orderId));
 
-        // Cambiar estado a SERVED (máquina de estados)
-        order.setStatus(OrderTableState.SERVED);
-        orderRepository.save(order);
-        log.info("Estado cambió a SERVED para orden: {}", orderId);
-
-        // Descontar inventario
-        for (Order_detail detail : order.getOrderDetailList()) {
-            availabilityService.deductInventoryForProduct(detail.getProduct(), detail.getQuantity());
+        // Validar que está en estado SERVED antes de cambiar a PAID
+        if (order.getStatus() != OrderTableState.SERVED) {
+            throw new ValidationException("La orden debe estar en estado SERVED para confirmar el pago. Estado actual: " + order.getStatus());
         }
 
-        log.info("Pago confirmado e inventario descontado para orden: {}", orderId);
+        // Cambiar estado a PAID
+        order.setStatus(OrderTableState.PAID);
+        Order updated = orderRepository.save(order);
+        log.info("Pago confirmado para orden: {} - Estado cambió a PAID", orderId);
+
+        return toDTO(updated);
     }
 
     /**
@@ -235,7 +237,8 @@ public class OrderService {
 
     /**
      * Actualiza el estado de una orden
-     * PENDING → IN_PREPARATION → SERVED → (Cliente confirma entrega)
+     * PENDING → IN_PREPARATION → SERVED → PAID
+     * Cuando cambia a SERVED se descuenta el inventario
      */
     public OrderDTO updateOrderStatus(Long orderId, UpdateOrderStatusRequest request) {
         Order order = orderRepository.findById(orderId)
@@ -243,6 +246,14 @@ public class OrderService {
 
         // Validar transición de estado
         validateStatusTransition(order.getStatus(), request.getStatus());
+
+        // Si cambia a SERVED, descontar inventario
+        if (request.getStatus().equals(OrderTableState.SERVED) && !order.getStatus().equals(OrderTableState.SERVED)) {
+            log.info("Descuentando inventario para orden: {} al cambiar a SERVED", orderId);
+            for (Order_detail detail : order.getOrderDetailList()) {
+                availabilityService.deductInventoryForProduct(detail.getProduct(), detail.getQuantity());
+            }
+        }
 
         order.setStatus(request.getStatus());
         Order updated = orderRepository.save(order);
@@ -344,7 +355,12 @@ public class OrderService {
                 }
             }
             case SERVED -> {
-                throw new IllegalStateException("No se puede cambiar el estado de una orden SERVED");
+                if (!newStatus.equals(OrderTableState.PAID)) {
+                    throw new IllegalStateException("De SERVED solo se puede ir a PAID");
+                }
+            }
+            case PAID -> {
+                throw new IllegalStateException("No se puede cambiar el estado de una orden PAID");
             }
             case CANCELLED -> {
                 throw new IllegalStateException("No se puede cambiar el estado de una orden CANCELLED");

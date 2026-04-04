@@ -126,7 +126,7 @@ public class OrderController {
      * CLIENTE: Confirmar entrega/recepción de orden (sin login, solo sessionToken)
      * Cliente confirma que recibió su orden
      */
-    @PatchMapping("/api/client/orders/{id}/confirm-delivery")
+    @PostMapping("/api/client/orders/{id}/confirm-delivery")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<OrderDTO> confirmDelivery(@PathVariable Long id) {
         log.info("Cliente confirmando entrega de orden: {}", id);
@@ -179,7 +179,7 @@ public class OrderController {
      * Requiere: User login con rol COCINA, MESERO o ADMIN
      * PENDING → IN_PREPARATION → SERVED → (Cliente confirma)
      */
-    @PatchMapping("/api/staff/orders/{id}/status")
+    @PostMapping("/api/staff/orders/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'COCINA', 'MESERO')")
     public ResponseEntity<OrderDTO> updateOrderStatus(
             @PathVariable Long id,
@@ -207,7 +207,7 @@ public class OrderController {
      * MESERO/CASHIER: Cancelar una orden
      * Requiere: User login con rol MESERO, CASHIER o ADMIN
      */
-    @PatchMapping("/api/staff/orders/{id}/cancel")
+    @PostMapping("/api/staff/orders/{id}/cancel")
     @PreAuthorize("hasAnyRole('ADMIN', 'MESERO', 'CASHIER')")
     public ResponseEntity<OrderDTO> cancelOrder(@PathVariable Long id) {
         log.info("Cancelando orden: {}", id);
@@ -216,20 +216,19 @@ public class OrderController {
     }
 
     /**
-     * CASHIER/MESERO: Confirmar pago y cambiar a SERVED
+     * CASHIER/MESERO: Confirmar pago
      * Se debe llamar DESPUÉS de que el cliente pague exitosamente
      * Requiere: User login con rol CASHIER, MESERO o ADMIN
      *
-     * Máquina de estados: PENDING → IN_PREPARATION → SERVED (pago confirmado)
-     * Descuenta el stock del inventario según los items de la receta
-     * IMPORTANTE: Solo debe llamarse UNA VEZ por orden
+     * Máquina de estados: PENDING → IN_PREPARATION → SERVED → PAID
+     * El descuento de inventario se realiza cuando la orden cambia a SERVED
      */
     @PostMapping("/api/staff/orders/{id}/confirm-payment")
     @PreAuthorize("hasAnyRole('ADMIN', 'MESERO', 'CASHIER')")
-    public ResponseEntity<MessageResponse> confirmPayment(@PathVariable Long id) {
+    public ResponseEntity<OrderDTO> confirmPayment(@PathVariable Long id) {
         log.info("Confirmando pago para orden: {}", id);
-        orderService.confirmPaymentAndDeductInventory(id);
-        return ResponseEntity.ok(new MessageResponse("Pago confirmado. Estado: SERVED. Inventario descontado."));
+        OrderDTO order = orderService.confirmPayment(id);
+        return ResponseEntity.ok(order);
     }
 
     // ============ DELIVERY - ÓRDENES DE ENTREGA (Público, sin autenticación) ============
