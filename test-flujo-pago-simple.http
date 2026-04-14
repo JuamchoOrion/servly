@@ -1,5 +1,6 @@
 ### Variables
 @host = http://localhost:8081
+@baseUrl = http://localhost:8081
 @tableNumber = 10
 @productId1 = 1
 @productId2 = 2
@@ -7,138 +8,149 @@
 
 ### ============================================
 ### FLUJO COMPLETO: CLIENTE ORDENA Y PAGA
+### Estado: PENDING → IN_PREPARATION → SERVED → PAID
 ### ============================================
 
 ### 1. CLIENTE: Abrir sesión de mesa (Escanear QR)
+### Respuesta: Sesión creada + sessionToken en cookie
 GET {{host}}/api/client/session?table={{tableNumber}}
 
-### Guardar el sessionToken de la respuesta anterior (está en cookie automáticamente)
+### 2. CLIENTE: Obtener menú disponible
+### Respuesta: Lista de productos con variantes
+GET {{host}}/api/menu/products?page=0&size=20
 
-### 2. CLIENTE: Obtener menú con paginación
-GET {{host}}/api/menu/products?page=0&size=10
-
-### 3. CLIENTE: Crear orden
+### 3. CLIENTE: Crear orden (Estado inicial: PENDING)
+### Respuesta: Orden creada con ID para tracking
 POST {{host}}/api/client/orders
 Content-Type: application/json
 
 {
   "products": [
     {
-      "productId": {{productId1}},
-      "quantity": 1
+      "productId": 1,
+      "quantity": 2,
+      "variantId": 101
+    },
+    {
+      "productId": 2,
+      "quantity": 1,
+      "variantId": 201
     }
   ]
 }
 
-### Guardar el orderId de la respuesta (ej: 5)
+### Guardar el orderId de la respuesta (ejemplo: "id": 5)
+### Copiar el ID para los siguientes pasos
 
-### 4. CLIENTE: Verificar estado (PENDING)
+### 4. CLIENTE: Ver estado de mi orden (aún PENDING)
 GET {{host}}/api/client/orders/5
 
-### 5. CLIENTE: Ver todas mis órdenes
+### 5. CLIENTE: Ver todas mis órdenes de la mesa
 GET {{host}}/api/client/orders
 
+
 ### ============================================
-### FLUJO ADMIN/STAFF: PREPARAR Y PROCESAR PAGO
+### FLUJO ADMIN/STAFF: PREPARACIÓN Y PAGO
 ### ============================================
 
-### 6. ADMIN: Ver órdenes pendientes
+### 6. ADMIN: Ver órdenes pendientes (todas en espera de preparación)
 GET {{host}}/api/staff/orders/pending
 Authorization: Bearer {{adminToken}}
 
-### 7. ADMIN: Cambiar estado a IN_PREPARATION (Cocina comienza)
-POST {{host}}/api/staff/orders/5/status
-Authorization: Bearer {{adminToken}}
+### 7. ADMIN: Cambiar estado a IN_PREPARATION (PATCH)
+### Nota: Usar PATCH, no PUT o POST
+PATCH {{host}}/api/staff/orders/5/status
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
   "status": "IN_PREPARATION"
 }
 
-### 8. ADMIN: Ver órdenes en preparación
-GET {{host}}/api/staff/orders/in-preparation
+### 8. ADMIN: Ver orden en preparación
+GET {{host}}/api/staff/orders/5
 Authorization: Bearer {{adminToken}}
 
-### 9. ADMIN: Cambiar estado a SERVED (Comida lista)
-POST {{host}}/api/staff/orders/5/status
-Authorization: Bearer {{adminToken}}
+### 9. ADMIN: Cambiar estado a SERVED (comida lista)
+### Nota: Esto DESCUENTA inventario automáticamente
+PATCH {{host}}/api/staff/orders/5/status
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
   "status": "SERVED"
 }
 
-### 10. ADMIN: Ver órdenes de mesa específica
-GET {{host}}/api/staff/tables/{{tableNumber}}/orders
-Authorization: Bearer {{adminToken}}
+### 10. CLIENTE: Ver orden después de servida (SERVED)
+GET {{host}}/api/client/orders/5
 
-### 11. ADMIN: Generar factura (antes de procesar pago)
-GET {{host}}/api/staff/orders/5/invoice
-Authorization: Bearer {{adminToken}}
-
-### 12. ADMIN: Confirmar pago (⭐ CAMBIA AUTOMÁTICAMENTE A PAID)
+### 11. ADMIN: Confirmar pago (FINAL STATE: PAID)
+### Nota: Solo se puede hacer si estado es SERVED
+### IMPORTANTE: Este endpoint cambia automáticamente el estado a PAID
 POST {{host}}/api/staff/orders/5/confirm-payment
 Authorization: Bearer {{adminToken}}
 
-### 13. VERIFICAR: Estado final es PAID
+### 12. VERIFICAR: Estado final es PAID
 GET {{host}}/api/staff/orders/5
 Authorization: Bearer {{adminToken}}
 
-### 14. CLIENTE: Verificar que orden está PAID
+### 13. CLIENTE: Verificar que orden está PAID
 GET {{host}}/api/client/orders/5
 
 ### ============================================
 ### FLUJO ADICIONAL: MÚLTIPLES PRODUCTOS
 ### ============================================
 
-### 15. CLIENTE: Crear orden con varios productos
+### 14. CLIENTE: Crear orden con varios productos
 POST {{host}}/api/client/orders
 Content-Type: application/json
 
 {
   "products": [
     {
-      "productId": {{productId1}},
-      "quantity": 2
+      "productId": 1,
+      "quantity": 2,
+      "variantId": 101
     },
     {
-      "productId": {{productId2}},
-      "quantity": 1
+      "productId": 2,
+      "quantity": 1,
+      "variantId": 201
     }
   ]
 }
 
-### Guardar el nuevo orderId (ej: 6)
+### Guardar el nuevo orderId de la respuesta (ej: 6)
 
-### 16. ADMIN: Ver órdenes de mesa
+### 15. ADMIN: Ver órdenes de mesa específica
 GET {{host}}/api/staff/tables/{{tableNumber}}/orders
 Authorization: Bearer {{adminToken}}
 
-### 17. ADMIN: Procesar orden más compleja
-POST {{host}}/api/staff/orders/6/status
-Authorization: Bearer {{adminToken}}
+### 16. ADMIN: Procesar orden (IN_PREPARATION)
+PATCH {{host}}/api/staff/orders/6/status
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
   "status": "IN_PREPARATION"
 }
 
-### Esperar un poco...
+### Esperar un poco (simula tiempo de cocina)...
 
-### 18. ADMIN: Marcar como servida
-POST {{host}}/api/staff/orders/6/status
-Authorization: Bearer {{adminToken}}
+### 17. ADMIN: Marcar como servida (SERVED)
+PATCH {{host}}/api/staff/orders/6/status
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
   "status": "SERVED"
 }
 
-### 19. ADMIN: Generar factura para orden con múltiples items
+### 18. ADMIN: Generar factura para orden con múltiples items
 GET {{host}}/api/staff/orders/6/invoice
 Authorization: Bearer {{adminToken}}
 
-### 20. ADMIN: Confirmar pago (PAID automático)
+### 19. ADMIN: Confirmar pago (PAID automático)
 POST {{host}}/api/staff/orders/6/confirm-payment
 Authorization: Bearer {{adminToken}}
 
@@ -146,14 +158,14 @@ Authorization: Bearer {{adminToken}}
 ### FLUJO CANCELACIÓN
 ### ============================================
 
-### 21. CLIENTE: Crear orden de prueba para cancelar
+### 20. CLIENTE: Crear orden de prueba para cancelar
 POST {{host}}/api/client/orders
 Content-Type: application/json
 
 {
   "products": [
     {
-      "productId": {{productId1}},
+      "productId": 1,
       "quantity": 1
     }
   ]
@@ -161,11 +173,16 @@ Content-Type: application/json
 
 ### Guardar orderId (ej: 7)
 
-### 22. ADMIN: Cancelar orden (puede desde cualquier estado)
-POST {{host}}/api/staff/orders/7/cancel
+### 21. ADMIN: Cancelar orden (puede desde PENDING)
+PATCH {{host}}/api/staff/orders/7/status
+Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
-### 23. VERIFICAR: Estado es CANCELLED
+{
+  "status": "CANCELLED"
+}
+
+### 22. VERIFICAR: Estado es CANCELLED
 GET {{host}}/api/staff/orders/7
 Authorization: Bearer {{adminToken}}
 
@@ -174,40 +191,49 @@ Authorization: Bearer {{adminToken}}
 ### ============================================
 
 ### ⚠️ INTENTO INVÁLIDO: Cambiar de PENDING a SERVED (falta IN_PREPARATION)
-POST {{host}}/api/staff/orders/5/status
-Authorization: Bearer {{adminToken}}
+### Resultado esperado: ❌ Error 400 - "De PENDING solo se puede ir a IN_PREPARATION"
+PATCH {{host}}/api/staff/orders/8/status
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
   "status": "SERVED"
 }
-### Resultado: ❌ Error - Transición inválida
 
 ### ⚠️ INTENTO INVÁLIDO: Cambiar de SERVED a IN_PREPARATION (hacia atrás)
-POST {{host}}/api/staff/orders/5/status
-Authorization: Bearer {{adminToken}}
+### Resultado esperado: ❌ Error 400 - "De SERVED solo se puede ir a PAID"
+PATCH {{host}}/api/staff/orders/5/status
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
   "status": "IN_PREPARATION"
 }
-### Resultado: ❌ Error - No se puede volver atrás
 
-### ⚠️ INTENTO INVÁLIDO: Confirmar pago dos veces
-POST {{host}}/api/staff/orders/5/confirm-payment
+### ⚠️ INTENTO INVÁLIDO: Confirmar pago cuando status es PENDING
+### Resultado esperado: ❌ Error 400 - "La orden debe estar en estado SERVED"
+POST {{host}}/api/staff/orders/8/confirm-payment
 Authorization: Bearer {{adminToken}}
-### Resultado: ❌ Error - Orden no está en SERVED
 
 ### ============================================
 ### FLUJO CORRECTO DE ESTADOS
 ### ============================================
 
-### PENDING → IN_PREPARATION → SERVED → PAID
+###
+### MÁQUINA DE ESTADOS: PENDING → IN_PREPARATION → SERVED → PAID
 ###
 ### Transiciones válidas:
-### ✅ PENDING → IN_PREPARATION
-### ✅ IN_PREPARATION → SERVED
-### ✅ SERVED → PAID (via confirm-payment)
+### ✅ PENDING → IN_PREPARATION (cambiar a "en preparación")
+### ✅ IN_PREPARATION → SERVED (comida lista, descuenta inventario)
+### ✅ SERVED → PAID (confirmar pago)
+### ✅ Cualquier estado → CANCELLED (cancelación)
+###
+### Transiciones inválidas (darán error):
+### ❌ PENDING → SERVED (salta una etapa)
+### ❌ PENDING → PAID
+### ❌ IN_PREPARATION → PENDING (hacia atrás)
+### ❌ SERVED → IN_PREPARATION (hacia atrás)
+###
 ### ✅ Cualquier estado → CANCELLED
 ###
 ### ❌ Cualquier otra transición rechazada

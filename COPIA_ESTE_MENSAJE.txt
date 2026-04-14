@@ -1,0 +1,247 @@
+# 📧 MENSAJE LISTO PARA COPIAR Y PEGAR
+
+Copia este texto y envía directamente al equipo frontend:
+
+---
+
+## ASUNTO: 📦 DOCUMENTACIÓN COMPLETA - APIs de Productos
+
+Hola equipo,
+
+Preparé **TODA LA DOCUMENTACIÓN** que necesitan para integrar las APIs de gestión de productos.
+
+### 📋 3 ARCHIVOS LISTOS:
+
+1. **GUIA_APIS_PRODUCTOS_ADMIN.md**
+   - Documentación técnica completa
+   - Ejemplos de código JavaScript/Fetch
+   - Manejo de errores
+   - Tabla resumen de endpoints
+
+2. **PROMPTS_APIS_PRODUCTOS.md**
+   - 13 prompts listos para copiar y pegar
+   - Uno para cada funcionalidad
+   - Útil para tickets de desarrollo o LLM
+
+3. **test-apis-productos-admin.http**
+   - Archivo HTTP con todos los endpoints
+   - Prueben aquí primero antes de implementar
+   - Abre en Postman o VS Code (extensión REST Client)
+
+4. **RESUMEN_EJECUTIVO_APIS_PRODUCTOS.md**
+   - Resumen rápido de todo
+   - Tablas de referencia
+   - Códigos JavaScript quick-start
+
+### 🔑 ENDPOINTS PRINCIPALES:
+
+**PRODUCTOS (8 operaciones)**
+```
+POST   /api/admin/products              → Crear
+GET    /api/admin/products              → Listar
+GET    /api/admin/products/{id}         → Obtener uno
+GET    /api/admin/products/active       → Solo activos
+PUT    /api/admin/products/{id}         → Editar
+PATCH  /api/admin/products/{id}/activate    → Activar
+PATCH  /api/admin/products/{id}/deactivate  → Desactivar
+DELETE /api/admin/products/{id}         → Eliminar
+```
+
+**CATEGORÍAS (5 operaciones)**
+```
+POST   /api/admin/product-categories      → Crear
+GET    /api/admin/product-categories      → Listar
+GET    /api/admin/product-categories/{id} → Obtener uno
+GET    /api/admin/product-categories/active → Solo activas
+PUT    /api/admin/product-categories/{id} → Editar
+DELETE /api/admin/product-categories/{id} → Eliminar
+```
+
+### 🔐 REQUISITO IMPORTANTE:
+
+Todos los endpoints requieren:
+```javascript
+headers: {
+  'Authorization': 'Bearer {tu_token_jwt}',
+  'Content-Type': 'application/json'
+}
+```
+
+### 💡 CÓMO EMPEZAR:
+
+1. **Para entender qué implementar:**
+   - Abre `PROMPTS_APIS_PRODUCTOS.md`
+   - Copia el prompt que necesites
+   - Úsalo para describir la tarea
+
+2. **Para ver ejemplos de código:**
+   - Abre `GUIA_APIS_PRODUCTOS_ADMIN.md`
+   - Busca la sección que necesites
+   - Copia el código JavaScript
+
+3. **Para probar los endpoints:**
+   - Abre `test-apis-productos-admin.http` en Postman
+   - Reemplaza `{{token}}` con tu token JWT
+   - Ejecuta los requests
+
+4. **Para referencia rápida:**
+   - Abre `RESUMEN_EJECUTIVO_APIS_PRODUCTOS.md`
+   - Allí están los códigos más cortos
+
+### 📝 CAMPOS DE PRODUCTO:
+
+```javascript
+{
+  "name": "Nombre",                      // string, requerido
+  "description": "Descripción",          // string, requerido
+  "price": 25000,                        // número, requerido, > 0
+  "categoryId": 1,                       // número, requerido
+  "recipeId": 5,                         // número, requerido
+  "active": true                         // booleano, default: true
+}
+```
+
+### 📝 CAMPOS DE CATEGORÍA:
+
+```javascript
+{
+  "name": "Nombre de la categoría",      // string, requerido
+  "description": "Descripción"           // string, requerido
+}
+```
+
+### ✅ EJEMPLO RÁPIDO (JavaScript):
+
+```javascript
+// 1. Obtener token (al login)
+const token = 'eyJ...';
+
+// 2. Obtener todos los productos
+const productos = await fetch('http://localhost:8081/api/admin/products', {
+  headers: { 'Authorization': `Bearer ${token}` }
+}).then(r => r.json());
+
+console.log(productos);
+
+// 3. Crear producto
+const nuevoProducto = await fetch('http://localhost:8081/api/admin/products', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Hamburguesa',
+    description: 'Deliciosa hamburguesa',
+    price: 25000,
+    categoryId: 1,
+    recipeId: 5,
+    active: true
+  })
+}).then(r => r.json());
+
+console.log('Creado:', nuevoProducto);
+```
+
+### 📊 RESPUESTA ESPERADA (Crear/Obtener Producto):
+
+```javascript
+{
+  "id": 42,
+  "name": "Hamburguesa Clásica",
+  "description": "Hamburguesa de carne con queso, tomate y lechuga",
+  "price": 25000,
+  "category": {
+    "id": 1,
+    "name": "Comidas Principales"
+  },
+  "recipe": {
+    "id": 5,
+    "name": "Receta Hamburguesa"
+  },
+  "active": true,
+  "createdAt": "2026-04-13T14:30:00",
+  "updatedAt": "2026-04-13T16:00:00"
+}
+```
+
+### 📊 RESPUESTA ESPERADA (Listar Productos):
+
+```javascript
+{
+  "content": [
+    {
+      "id": 1,
+      "name": "Café Americano",
+      "description": "Café negro simple",
+      "price": 5000,
+      "category": { "id": 3, "name": "Bebidas" },
+      "active": true
+    },
+    // ... más productos
+  ],
+  "pageable": {
+    "size": 10,
+    "number": 0,
+    "totalElements": 25,
+    "totalPages": 3
+  }
+}
+```
+
+### ⚠️ CÓDIGOS DE ERROR:
+
+| Código | Significado |
+|--------|------------|
+| 201 | Recurso creado exitosamente |
+| 200 | OK, operación exitosa |
+| 400 | Datos inválidos (ej: precio negativo) |
+| 401 | Token inválido o expirado |
+| 403 | Sin permisos (no eres ADMIN) |
+| 404 | Recurso no encontrado |
+| 500 | Error del servidor |
+
+### 🚀 PRÓXIMOS PASOS:
+
+1. Lean los archivos en este orden:
+   - `RESUMEN_EJECUTIVO_APIS_PRODUCTOS.md` (5 min)
+   - `GUIA_APIS_PRODUCTOS_ADMIN.md` (cuando implementen)
+
+2. Prueben con el archivo HTTP antes de codificar
+
+3. Implementen las funcionalidades basándose en los ejemplos
+
+4. Si tienen dudas, revisen la guía completa
+
+### ✅ CHECKLIST:
+
+- [ ] Leí el resumen ejecutivo
+- [ ] Probé los endpoints con el archivo HTTP
+- [ ] Implementé crear producto
+- [ ] Implementé listar productos
+- [ ] Implementé editar producto
+- [ ] Implementé eliminar producto
+- [ ] Implementé activar/desactivar
+- [ ] Implementé CRUD de categorías
+- [ ] Las categorías cargan en los selects
+- [ ] Todo funciona en el navegador
+
+### 📞 PREGUNTAS:
+
+- **¿Necesito un categoryId?** Sí, debe existir antes de crear producto
+- **¿Qué es soft delete?** Cuando eliminas, el dato no se borra, solo se marca como inactivo
+- **¿Cómo ordeno resultados?** Usa `?sort=name,asc` o `?sort=price,desc`
+- **¿Cómo pagino?** Usa `?page=0&size=10`
+- **¿Más dudas?** Todo está explicado en GUIA_APIS_PRODUCTOS_ADMIN.md
+
+---
+
+¡Éxito en la implementación! 🚀
+
+---
+
+**Versión**: 1.0
+**Fecha**: 2026-04-13
+**Archivos**: 4 documentos + 1 archivo de pruebas
+**Status**: ✅ Listo para usar
+
