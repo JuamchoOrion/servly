@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ public class ProductCategoryService {
      * Crear una nueva categoría de productos
      */
     public ProductCategory createCategory(CreateProductCategoryRequest request) {
-        if (productCategoryRepository.findByName(request.getName()).isPresent()) {
+        if (productCategoryRepository.findByNameAndDeletedFalse(request.getName()).isPresent()) {
             throw new RuntimeException("Ya existe una categoría con el nombre: " + request.getName());
         }
 
@@ -34,6 +35,8 @@ public class ProductCategoryService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .active(request.getActive() != null ? request.getActive() : true)
+                .deleted(false)
+                .deletedAt(null)
                 .build();
 
         ProductCategory saved = productCategoryRepository.save(category);
@@ -42,25 +45,25 @@ public class ProductCategoryService {
     }
 
     /**
-     * Obtener categoría por ID
+     * Obtener categoría por ID - solo no eliminadas
      */
     public ProductCategory getCategoryById(Long id) {
-        return productCategoryRepository.findById(id)
+        return productCategoryRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Categoría de producto no encontrada con ID: " + id));
     }
 
     /**
-     * Listar todas las categorías activas
+     * Listar todas las categorías activas y no eliminadas
      */
     public List<ProductCategory> getAllActiveCategories() {
-        return productCategoryRepository.findByActiveTrue();
+        return productCategoryRepository.findByActiveTrueAndDeletedFalse();
     }
 
     /**
-     * Listar todas las categorías
+     * Listar todas las categorías no eliminadas
      */
     public List<ProductCategory> getAllCategories() {
-        return productCategoryRepository.findAll();
+        return productCategoryRepository.findByDeletedFalse();
     }
 
     /**
@@ -70,7 +73,7 @@ public class ProductCategoryService {
         ProductCategory category = getCategoryById(id);
 
         if (!category.getName().equals(request.getName()) &&
-            productCategoryRepository.findByName(request.getName()).isPresent()) {
+            productCategoryRepository.findByNameAndDeletedFalse(request.getName()).isPresent()) {
             throw new RuntimeException("Ya existe una categoría con el nombre: " + request.getName());
         }
 
@@ -86,12 +89,27 @@ public class ProductCategoryService {
     }
 
     /**
-     * Eliminar categoría (lógico)
+     * Eliminar categoría (soft delete) - marca como eliminada
      */
     public void deleteCategory(Long id) {
         ProductCategory category = getCategoryById(id);
-        productCategoryRepository.delete(category);
+        category.setDeleted(true);
+        category.setDeletedAt(LocalDateTime.now());
+        productCategoryRepository.save(category);
         log.info("Categoría de producto eliminada: {}", category.getName());
+    }
+
+    /**
+     * Restaurar categoría eliminada
+     */
+    public ProductCategory restoreCategory(Long id) {
+        ProductCategory category = productCategoryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Categoría de producto no encontrada con ID: " + id));
+        category.setDeleted(false);
+        category.setDeletedAt(null);
+        ProductCategory restored = productCategoryRepository.save(category);
+        log.info("Categoría de producto restaurada: {}", restored.getName());
+        return restored;
     }
 }
 

@@ -8,12 +8,12 @@ import co.edu.uniquindio.servly.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -35,18 +35,10 @@ public class ProductMenuService {
         log.info("Obteniendo productos activos con paginación: page={}, size={}",
                 pageable.getPageNumber(), pageable.getPageSize());
 
-        List<Product> products = productRepository.findByActiveTrue();
-        List<ProductWithRecipeDTO> dtos = products.stream()
-                .map(this::toProductWithRecipeDTO)
-                .collect(Collectors.toList());
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), dtos.size());
-        List<ProductWithRecipeDTO> pageContent = dtos.subList(start, end);
-
-        Page<ProductWithRecipeDTO> page = new PageImpl<>(pageContent, pageable, dtos.size());
-        log.info("Retornando {} productos de un total de {}", pageContent.size(), dtos.size());
-        return page;
+        Page<Product> products = productRepository.findActiveProductsWithActiveCategories(pageable);
+        Page<ProductWithRecipeDTO> dtos = products.map(this::toProductWithRecipeDTO);
+        log.info("Retornando {} productos de un total de {}", dtos.getNumberOfElements(), dtos.getTotalElements());
+        return dtos;
     }
 
     /**
@@ -55,7 +47,7 @@ public class ProductMenuService {
     @Transactional(readOnly = true)
     public List<ProductWithRecipeDTO> getActiveProducts() {
         log.info("Obteniendo todos los productos activos");
-        return productRepository.findByActiveTrue()
+        return productRepository.findActiveProductsWithActiveCategories()
                 .stream()
                 .map(this::toProductWithRecipeDTO)
                 .collect(Collectors.toList());
@@ -80,22 +72,40 @@ public class ProductMenuService {
      * Incluye los ItemDetails de la receta con sus opciones de variación
      */
     private ProductWithRecipeDTO toProductWithRecipeDTO(Product product) {
-        Recipe recipe = product.getRecipe();
+        List<ItemDetailDTO> itemDetails = List.of();
 
-        List<ItemDetailDTO> itemDetails = (recipe != null && recipe.getItemDetailList() != null)
-            ? recipe.getItemDetailList().stream()
-                .map(itemDetail -> ItemDetailDTO.builder()
-                        .id(itemDetail.getId())
-                        .itemId(itemDetail.getItem().getId())
-                        .itemName(itemDetail.getItem().getName())
-                        .baseQuantity(itemDetail.getQuantity())
-                        .annotation(itemDetail.getAnnotation())
-                        .isOptional(itemDetail.getIsOptional())
-                        .minQuantity(itemDetail.getMinQuantity())
-                        .maxQuantity(itemDetail.getMaxQuantity())
-                        .build())
-                .collect(Collectors.toList())
-            : List.of();
+        try {
+            Recipe recipe = product.getRecipe();
+
+            if (recipe != null && recipe.getItemDetailList() != null && !recipe.getItemDetailList().isEmpty()) {
+                try {
+                    itemDetails = recipe.getItemDetailList().stream()
+                        .map(itemDetail -> {
+                            if (itemDetail.getItem() == null) {
+                                return null;
+                            }
+                            return ItemDetailDTO.builder()
+                                    .id(itemDetail.getId())
+                                    .itemId(itemDetail.getItem().getId())
+                                    .itemName(itemDetail.getItem().getName())
+                                    .baseQuantity(itemDetail.getQuantity())
+                                    .annotation(itemDetail.getAnnotation())
+                                    .isOptional(itemDetail.getIsOptional())
+                                    .minQuantity(itemDetail.getMinQuantity())
+                                    .maxQuantity(itemDetail.getMaxQuantity())
+                                    .build();
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                } catch (Exception e) {
+                    log.warn("Error procesando ItemDetails para producto {}: {}", product.getId(), e.getMessage());
+                    itemDetails = List.of();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error accediendo a recipe para producto {}: {}", product.getId(), e.getMessage());
+            itemDetails = List.of();
+        }
 
         return ProductWithRecipeDTO.builder()
                 .id(product.getId())

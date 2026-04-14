@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class ProductService {
      */
     public Product createProduct(CreateProductRequest request) {
         // Validar categoría
-        ProductCategory category = productCategoryRepository.findById(request.getProductCategoryId())
+        ProductCategory category = productCategoryRepository.findByIdAndDeletedFalse(request.getProductCategoryId())
                 .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
 
         // Crear producto
@@ -40,6 +41,8 @@ public class ProductService {
                 .price(request.getPrice())
                 .category(category)
                 .active(request.getActive() != null ? request.getActive() : true)
+                .deleted(false)
+                .deletedAt(null)
                 .build();
 
         // Vincular receta si se proporciona
@@ -53,24 +56,24 @@ public class ProductService {
     }
 
     /**
-     * Obtener todos los productos (paginado)
+     * Obtener todos los productos (paginado) - solo no eliminados
      */
     public Page<Product> getAllProducts(Pageable pageable) {
-        return productRepository.findAll(pageable);
+        return productRepository.findByDeletedFalse(pageable);
     }
 
     /**
-     * Obtener productos activos (paginado)
+     * Obtener productos activos (paginado) - solo no eliminados
      */
     public Page<Product> getActiveProducts(Pageable pageable) {
-        return productRepository.findByActiveTrue(pageable);
+        return productRepository.findByActiveTrueAndDeletedFalse(pageable);
     }
 
     /**
-     * Obtener producto por ID
+     * Obtener producto por ID - solo no eliminados
      */
     public Product getProductById(Long id) {
-        return productRepository.findById(id)
+        return productRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado: " + id));
     }
 
@@ -97,11 +100,23 @@ public class ProductService {
     }
 
     /**
-     * Desactivar producto (borrado lógico)
+     * Eliminar producto (soft delete) - marca como eliminado
      */
     public Product deleteProduct(Long id) {
         Product product = getProductById(id);
-        product.setActive(false);
+        product.setDeleted(true);
+        product.setDeletedAt(LocalDateTime.now());
+        return productRepository.save(product);
+    }
+
+    /**
+     * Restaurar producto eliminado
+     */
+    public Product restoreProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado: " + id));
+        product.setDeleted(false);
+        product.setDeletedAt(null);
         return productRepository.save(product);
     }
 

@@ -2,6 +2,7 @@ package co.edu.uniquindio.servly.controller;
 
 import co.edu.uniquindio.servly.DTO.Product.CreateProductRequest;
 import co.edu.uniquindio.servly.DTO.Product.CreateProductCategoryRequest;
+import co.edu.uniquindio.servly.DTO.Product.ProductDTO;
 import co.edu.uniquindio.servly.DTO.Roles.CreateEmployeeRequest;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.DTO.Roles.UpdateRoleRequest;
@@ -324,10 +325,9 @@ public class AdminController {
 
     @PostMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody CreateProductRequest request) {
+    public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody CreateProductRequest request) {
         Product product = productService.createProduct(request);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(product);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProductDTO.fromEntity(product));
     }
 
     /**
@@ -336,9 +336,9 @@ public class AdminController {
      */
     @GetMapping("/products")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<Page<Product>> getAllProducts(
+    public ResponseEntity<Page<ProductDTO>> getAllProducts(
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(productService.getAllProducts(pageable));
+        return ResponseEntity.ok(productService.getAllProducts(pageable).map(ProductDTO::fromEntity));
     }
 
     /**
@@ -347,9 +347,9 @@ public class AdminController {
      */
     @GetMapping("/products/active")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<Page<Product>> getActiveProducts(
+    public ResponseEntity<Page<ProductDTO>> getActiveProducts(
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(productService.getActiveProducts(pageable));
+        return ResponseEntity.ok(productService.getActiveProducts(pageable).map(ProductDTO::fromEntity));
     }
 
     /**
@@ -358,8 +358,8 @@ public class AdminController {
      */
     @GetMapping("/products/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
+        return ResponseEntity.ok(ProductDTO.fromEntity(productService.getProductById(id)));
     }
 
     /**
@@ -368,7 +368,7 @@ public class AdminController {
      */
     @PutMapping("/products/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<ProductDTO> updateProduct(
             @PathVariable Long id,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String description,
@@ -376,7 +376,7 @@ public class AdminController {
             @RequestParam(required = false) Boolean active) {
 
         Product product = productService.updateProduct(id, name, description, price, active);
-        return ResponseEntity.ok(product);
+        return ResponseEntity.ok(ProductDTO.fromEntity(product));
     }
 
     /**
@@ -396,8 +396,8 @@ public class AdminController {
      */
     @PatchMapping("/products/{id}/activate")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> activateProduct(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.activateProduct(id));
+    public ResponseEntity<ProductDTO> activateProduct(@PathVariable Long id) {
+        return ResponseEntity.ok(ProductDTO.fromEntity(productService.activateProduct(id)));
     }
 
     /**
@@ -406,8 +406,8 @@ public class AdminController {
      */
     @PatchMapping("/products/{id}/deactivate")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> deactivateProduct(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.deactivateProduct(id));
+    public ResponseEntity<ProductDTO> deactivateProduct(@PathVariable Long id) {
+        return ResponseEntity.ok(ProductDTO.fromEntity(productService.deactivateProduct(id)));
     }
 
     // ============ ENDPOINTS PARA MESAS ============

@@ -11,13 +11,23 @@ import java.util.Optional;
 public interface ProductCategoryRepository extends JpaRepository<ProductCategory, Long> {
 
     /**
-     * Obtiene una categoría por nombre
+     * Obtiene una categoría por nombre que no ha sido eliminada
      */
-    Optional<ProductCategory> findByName(String name);
+    Optional<ProductCategory> findByNameAndDeletedFalse(String name);
 
     /**
-     * Obtiene todas las categorías activas
+     * Obtiene todas las categorías activas y no eliminadas
      */
-    List<ProductCategory> findByActiveTrue();
+    List<ProductCategory> findByActiveTrueAndDeletedFalse();
+
+    /**
+     * Obtiene todas las categorías no eliminadas
+     */
+    List<ProductCategory> findByDeletedFalse();
+
+    /**
+     * Obtiene categoría por ID que no ha sido eliminada
+     */
+    Optional<ProductCategory> findByIdAndDeletedFalse(Long id);
 }
 

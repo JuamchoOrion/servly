@@ -288,7 +288,7 @@ Content-Type: application/json
   "description": "Este fallará",
   "price": -5000,
   "categoryId": 1,
-  "recipeId": 1,
+  "recipeId": 31,
   "active": true
 }
 

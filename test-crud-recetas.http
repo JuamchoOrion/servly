@@ -1,0 +1,414 @@
+### Test HTTP para CRUD de Recetas
+### Reemplaza {admin_token} con un token JWT válido de usuario ADMIN
+
+@baseUrl = http://localhost:8081
+@adminToken = tu_token_admin_aqui
+
+### ============ 1. CREAR RECETA: HAMBURGUESA ============
+
+POST {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Hamburguesa Premium",
+  "quantity": 1,
+  "description": "Hamburguesa deliciosa con ingredientes de calidad",
+  "itemDetails": [
+    {
+      "itemId": 1,
+      "quantity": 2,
+      "annotation": "pan tostado",
+      "isOptional": false
+    },
+    {
+      "itemId": 2,
+      "quantity": 150,
+      "annotation": "bien cocida",
+      "isOptional": false
+    },
+    {
+      "itemId": 3,
+      "quantity": 1,
+      "annotation": "queso cheddar",
+      "isOptional": false
+    },
+    {
+      "itemId": 4,
+      "quantity": 2,
+      "annotation": "rodajas de tomate",
+      "isOptional": true
+    },
+    {
+      "itemId": 5,
+      "quantity": 1,
+      "annotation": "hoja de lechuga",
+      "isOptional": true
+    }
+  ]
+}
+
+### Guardar el ID de la respuesta (ej: 1)
+
+### ============ 2. CREAR RECETA: PIZZA ============
+
+POST {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pizza Margherita",
+  "quantity": 1,
+  "description": "Pizza clásica italiana con mozzarella fresca",
+  "itemDetails": [
+    {
+      "itemId": 10,
+      "quantity": 1,
+      "annotation": "masa delgada",
+      "isOptional": false
+    },
+    {
+      "itemId": 11,
+      "quantity": 200,
+      "annotation": "salsa casera",
+      "isOptional": false
+    },
+    {
+      "itemId": 12,
+      "quantity": 150,
+      "annotation": "mozzarella fresca",
+      "isOptional": false
+    },
+    {
+      "itemId": 13,
+      "quantity": 5,
+      "annotation": "hojas frescas de albahaca",
+      "isOptional": true
+    }
+  ]
+}
+
+### ============ 3. CREAR RECETA: ENSALADA ============
+
+POST {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ensalada César",
+  "quantity": 1,
+  "description": "Ensalada fresca con aderezo César casero",
+  "itemDetails": [
+    {
+      "itemId": 20,
+      "quantity": 100,
+      "annotation": "lechuga romana",
+      "isOptional": false
+    },
+    {
+      "itemId": 21,
+      "quantity": 50,
+      "annotation": "queso parmesano rallado",
+      "isOptional": false
+    },
+    {
+      "itemId": 22,
+      "quantity": 100,
+      "annotation": "crutones caseros",
+      "isOptional": true
+    },
+    {
+      "itemId": 23,
+      "quantity": 100,
+      "annotation": "aderezo César",
+      "isOptional": false
+    }
+  ]
+}
+
+### ============ 4. OBTENER TODAS LAS RECETAS ============
+
+GET {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+
+### ============ 5. OBTENER RECETA POR ID (ID=1) ============
+
+GET {{baseUrl}}/api/admin/recipes/1
+Authorization: Bearer {{adminToken}}
+
+### ============ 6. OBTENER RECETA POR ID (ID=2) ============
+
+GET {{baseUrl}}/api/admin/recipes/2
+Authorization: Bearer {{adminToken}}
+
+### ============ 7. ACTUALIZAR RECETA (ID=1) ============
+
+PUT {{baseUrl}}/api/admin/recipes/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Hamburguesa Premium Plus",
+  "quantity": 1,
+  "description": "Hamburguesa mejorada con más ingredientes especiales",
+  "itemDetails": [
+    {
+      "itemId": 1,
+      "quantity": 2,
+      "annotation": "pan tostado con mantequilla",
+      "isOptional": false
+    },
+    {
+      "itemId": 2,
+      "quantity": 200,
+      "annotation": "bien cocida al punto",
+      "isOptional": false
+    },
+    {
+      "itemId": 3,
+      "quantity": 2,
+      "annotation": "queso cheddar doble",
+      "isOptional": false
+    },
+    {
+      "itemId": 4,
+      "quantity": 3,
+      "annotation": "rodajas de tomate fresco",
+      "isOptional": false
+    },
+    {
+      "itemId": 5,
+      "quantity": 2,
+      "annotation": "hojas de lechuga",
+      "isOptional": true
+    },
+    {
+      "itemId": 6,
+      "quantity": 3,
+      "annotation": "rodajas de cebolla",
+      "isOptional": true
+    },
+    {
+      "itemId": 7,
+      "quantity": 50,
+      "annotation": "mayonesa especial",
+      "isOptional": true
+    }
+  ]
+}
+
+### ============ 8. ACTUALIZAR RECETA (ID=2) ============
+
+PUT {{baseUrl}}/api/admin/recipes/2
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pizza Napolitana",
+  "quantity": 1,
+  "description": "Pizza napolitana tradicional con ingredientes importados",
+  "itemDetails": [
+    {
+      "itemId": 10,
+      "quantity": 1,
+      "annotation": "masa con levadura natural",
+      "isOptional": false
+    },
+    {
+      "itemId": 11,
+      "quantity": 250,
+      "annotation": "salsa de tomate San Marzano",
+      "isOptional": false
+    },
+    {
+      "itemId": 12,
+      "quantity": 200,
+      "annotation": "mozzarella di bufala",
+      "isOptional": false
+    },
+    {
+      "itemId": 13,
+      "quantity": 10,
+      "annotation": "albahaca fresca italiana",
+      "isOptional": false
+    },
+    {
+      "itemId": 24,
+      "quantity": 30,
+      "annotation": "aceite de oliva extra virgen",
+      "isOptional": true
+    }
+  ]
+}
+
+### ============ 9. OBTENER RECETA ACTUALIZADA (ID=1) ============
+
+GET {{baseUrl}}/api/admin/recipes/1
+Authorization: Bearer {{adminToken}}
+
+### ============ 10. ELIMINAR RECETA (ID=3) ============
+### Nota: Asegúrate de que la receta no sea usada por un producto
+
+DELETE {{baseUrl}}/api/admin/recipes/3
+Authorization: Bearer {{adminToken}}
+
+### ============ 11. INTENTAR OBTENER RECETA ELIMINADA (ID=3) ============
+### Debe retornar 404 Not Found
+
+GET {{baseUrl}}/api/admin/recipes/3
+Authorization: Bearer {{adminToken}}
+
+### ============ 12. OBTENER TODAS RECETAS NUEVAMENTE ============
+
+GET {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+
+### ============ CASOS DE ERROR A PROBAR ============
+
+### ERROR 1: Crear receta sin itemDetails
+POST {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Receta Sin Items",
+  "quantity": 1,
+  "description": "Esta receta no tiene items",
+  "itemDetails": []
+}
+
+### Error esperado: 400 - "Una receta debe tener al menos un item detail"
+
+### ERROR 2: Crear receta con itemId inválido
+POST {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Receta Con Item Inválido",
+  "quantity": 1,
+  "description": "Intentando usar un item que no existe",
+  "itemDetails": [
+    {
+      "itemId": 99999,
+      "quantity": 100,
+      "annotation": "",
+      "isOptional": false
+    }
+  ]
+}
+
+### Error esperado: 404 - "Item no encontrado: 99999"
+
+### ERROR 3: Obtener receta que no existe
+GET {{baseUrl}}/api/admin/recipes/99999
+Authorization: Bearer {{adminToken}}
+
+### Error esperado: 404 - "Receta no encontrada: 99999"
+
+### ERROR 4: Actualizar receta que no existe
+PUT {{baseUrl}}/api/admin/recipes/99999
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Receta Fantasma",
+  "quantity": 1,
+  "description": "Esta receta no existe",
+  "itemDetails": [
+    {
+      "itemId": 1,
+      "quantity": 100,
+      "annotation": "",
+      "isOptional": false
+    }
+  ]
+}
+
+### Error esperado: 404 - "Receta no encontrada: 99999"
+
+### ERROR 5: Eliminar receta que no existe
+DELETE {{baseUrl}}/api/admin/recipes/99999
+Authorization: Bearer {{adminToken}}
+
+### Error esperado: 404 - "Receta no encontrada: 99999"
+
+### ============ CASOS DE FLUJO COMPLETO ============
+
+### FLUJO: Crear receta y usarla en un producto
+
+### Paso 1: Crear receta
+POST {{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Sandwich de Jamón",
+  "quantity": 1,
+  "description": "Sandwich clásico de jamón y queso",
+  "itemDetails": [
+    {
+      "itemId": 30,
+      "quantity": 2,
+      "annotation": "pan blanco tostado",
+      "isOptional": false
+    },
+    {
+      "itemId": 31,
+      "quantity": 100,
+      "annotation": "jamón de pavo",
+      "isOptional": false
+    },
+    {
+      "itemId": 32,
+      "quantity": 50,
+      "annotation": "queso suizo",
+      "isOptional": false
+    },
+    {
+      "itemId": 33,
+      "quantity": 50,
+      "annotation": "lechuga",
+      "isOptional": true
+    }
+  ]
+}
+
+### Guardar el ID de la receta (ej: 4)
+### Luego crear un producto usando esta receta
+### Ver: /api/admin/products
+
+### ============ NOTAS IMPORTANTES ============
+
+# 1. REEMPLAZAR TOKENS:
+#    - Reemplaza {{adminToken}} con tu JWT válido
+#    - Puedes obtener tokens en POST /api/auth/login
+#
+# 2. IDS DE ITEMS:
+#    - Los itemIds (1, 2, 3, etc.) son ejemplos
+#    - Reemplázalos con IDs reales de tu BD
+#
+# 3. VALIDACIONES:
+#    - name: no puede estar vacío
+#    - quantity: debe ser > 0
+#    - itemDetails: mínimo 1 item
+#    - itemId: debe existir y estar activo
+#
+# 4. REEMPLAZO DE ITEMS:
+#    - Al actualizar, los itemDetails se reemplazan completamente
+#    - No se mezclan con los anteriores
+#
+# 5. RESTRICCIONES:
+#    - No puedes eliminar recetas usadas por productos
+#    - Los items deben estar activos
+#
+# 6. RESPUESTAS:
+#    - 201: Creación exitosa
+#    - 200: Actualización exitosa
+#    - 204: Eliminación exitosa (sin body)
+#    - 400: Errores de validación
+#    - 404: Recurso no encontrado
+#    - 401: No autenticado
+#    - 403: No autorizado
+
+

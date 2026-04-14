@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -112,12 +114,16 @@ public class RecipeService {
     }
 
     /**
-     * Elimina una receta.
+     * Soft delete de una receta.
+     * En lugar de eliminar físicamente, marca la receta como DELETED.
+     * Las recetas eliminadas no aparecerán en las consultas normales.
      */
     public void deleteRecipe(Long id) {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Receta no encontrada: " + id));
-        recipeRepository.delete(recipe);
+        recipe.setDeleted(true);
+        recipe.setDeletedAt(LocalDateTime.now());
+        recipeRepository.save(recipe);
     }
 
     /**
