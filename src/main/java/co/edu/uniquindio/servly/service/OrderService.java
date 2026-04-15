@@ -301,18 +301,39 @@ public class OrderService {
 
     /**
      * Convierte una orden a DTO
+     * Maneja productos eliminados (soft delete) gracefully
      */
     private OrderDTO toDTO(Order order) {
         List<OrderDetailDTO> details = order.getOrderDetailList().stream()
-                .map(d -> OrderDetailDTO.builder()
-                        .id(d.getId())
-                        .itemId(d.getProduct().getId())
-                        .itemName(d.getProduct().getName())
-                        .quantity(d.getQuantity())
-                        .unitPrice(d.getUnitPrice())
-                        .taxPercent(d.getTaxPercent())
-                        .subtotal(d.getSubtotal())
-                        .build())
+                .map(d -> {
+                    try {
+                        // Intentar cargar el producto
+                        Long productId = d.getProduct().getId();
+                        String productName = d.getProduct().getName();
+
+                        return OrderDetailDTO.builder()
+                                .id(d.getId())
+                                .itemId(productId)
+                                .itemName(productName)
+                                .quantity(d.getQuantity())
+                                .unitPrice(d.getUnitPrice())
+                                .taxPercent(d.getTaxPercent())
+                                .subtotal(d.getSubtotal())
+                                .build();
+                    } catch (org.hibernate.ObjectNotFoundException | jakarta.persistence.EntityNotFoundException ex) {
+                        // El producto fue eliminado (soft delete), usar info del detalle
+                        log.warn("Producto eliminado en orden detail ID: {}", d.getId());
+                        return OrderDetailDTO.builder()
+                                .id(d.getId())
+                                .itemId(null)
+                                .itemName("[Producto Eliminado]")
+                                .quantity(d.getQuantity())
+                                .unitPrice(d.getUnitPrice())
+                                .taxPercent(d.getTaxPercent())
+                                .subtotal(d.getSubtotal())
+                                .build();
+                    }
+                })
                 .collect(Collectors.toList());
 
         // Obtener número de mesa si es orden de mesa
