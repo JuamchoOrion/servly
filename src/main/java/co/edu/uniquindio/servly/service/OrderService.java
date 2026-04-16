@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,6 +39,7 @@ public class OrderService {
     private final TableSourceRepository tableSourceRepository;
     private final InventoryMetricsService metricsService;
     private final ProductAvailabilityService availabilityService;
+    private final OrderNotificationService notificationService;
 
     /**
      * Crea orden de mesa
@@ -182,7 +185,11 @@ public class OrderService {
         Order updated = orderRepository.save(order);
         log.info("Pago confirmado para orden: {} - Estado cambió a PAID", orderId);
 
-        return toDTO(updated);
+        // Notificar al cliente SSE una vez que la transacción se confirme
+        OrderDTO result = toDTO(updated);
+        emitNotificationAfterCommit(result);
+
+        return result;
     }
 
     /**
@@ -259,7 +266,12 @@ public class OrderService {
         Order updated = orderRepository.save(order);
 
         log.info("Orden {} actualizada a estado: {}", orderId, request.getStatus());
-        return toDTO(updated);
+
+        // Notificar al cliente SSE una vez que la transacción se confirme
+        OrderDTO result = toDTO(updated);
+        emitNotificationAfterCommit(result);
+
+        return result;
     }
 
     /**
@@ -451,5 +463,26 @@ public class OrderService {
                 .items(request.getProducts())
                 .build();
         return createTableOrder(tableOrderRequest);
+    }
+
+    /**
+     * Emite la notificación SSE al cliente de la mesa DESPUÉS de que la transacción
+     * se haya confirmado en BD (afterCommit), evitando notificar un estado que aún
+     * podría revertirse por rollback.
+     */
+    private void emitNotificationAfterCommit(OrderDTO order) {
+        if (order.getTableNumber() == null) {
+            return; // órdenes delivery no tienen mesa
+        }
+        Integer tableNumber = order.getTableNumber();
+        OrderTableState status = order.getStatus();
+        Long orderId = order.getId();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                notificationService.notifyOrderStatusChange(tableNumber, orderId, status);
+            }
+        });
     }
 }
