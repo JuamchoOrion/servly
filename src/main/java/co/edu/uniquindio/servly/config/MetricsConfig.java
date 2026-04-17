@@ -354,5 +354,261 @@ public class MetricsConfig {
             .tag("module", "inventory")
             .register(meterRegistry);
     }
+
+    /**
+     * TABLE & ORDER METRICS
+     */
+
+    /**
+     * Timer: table.session.open.duration
+     * Umbral: < 500 ms
+     * Tracks table session open duration
+     */
+    @Bean
+    public Timer tableSessionOpenDurationTimer() {
+        return Timer.builder("table.session.open.duration")
+            .description("Duration of table session open in milliseconds")
+            .tag("module", "table")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.open.success
+     * Umbral: >= 95%
+     * Counts successful table session opens
+     */
+    @Bean
+    public Counter tableSessionOpenSuccessCounter() {
+        return Counter.builder("table.session.open.success")
+            .description("Count of successful table session opens")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.open.total
+     * Counts total table session open attempts
+     */
+    @Bean
+    public Counter tableSessionOpenTotalCounter() {
+        return Counter.builder("table.session.open.total")
+            .description("Count of total table session open attempts")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.open.failure
+     * Counts failed table session opens
+     */
+    @Bean
+    public Counter tableSessionOpenFailureCounter() {
+        return Counter.builder("table.session.open.failure")
+            .description("Count of failed table session opens")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Timer: order.creation.duration
+     * Umbral: < 1000 ms
+     * Tracks order creation duration
+     */
+    @Bean
+    public Timer orderCreationDurationTimer() {
+        return Timer.builder("order.creation.duration")
+            .description("Duration of order creation in milliseconds")
+            .tag("module", "order")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: order.creation.success
+     * Umbral: >= 95%
+     * Counts successful order creations
+     */
+    @Bean
+    public Counter orderCreationSuccessCounter() {
+        return Counter.builder("order.creation.success")
+            .description("Count of successful order creations")
+            .tag("module", "order")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: order.creation.total
+     * Counts total order creation attempts
+     */
+    @Bean
+    public Counter orderCreationTotalCounter() {
+        return Counter.builder("order.creation.total")
+            .description("Count of total order creation attempts")
+            .tag("module", "order")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: order.creation.failure
+     * Counts failed order creations
+     */
+    @Bean
+    public Counter orderCreationFailureCounter() {
+        return Counter.builder("order.creation.failure")
+            .description("Count of failed order creations")
+            .tag("module", "order")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Timer: order.status.transition.duration
+     * Umbral: < 2000 ms
+     * Tracks order status transition duration
+     */
+    @Bean
+    public Timer orderStatusTransitionDurationTimer() {
+        return Timer.builder("order.status.transition.duration")
+            .description("Duration of order status transitions in milliseconds")
+            .tag("module", "order")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: order.status.transition.total
+     * Counts total order status transitions
+     */
+    @Bean
+    public Counter orderStatusTransitionTotalCounter() {
+        return Counter.builder("order.status.transition.total")
+            .description("Count of total order status transitions")
+            .tag("module", "order")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.close.success
+     * Umbral: >= 98%
+     * Counts successful table session closes
+     */
+    @Bean
+    public Counter tableSessionCloseSuccessCounter() {
+        return Counter.builder("table.session.close.success")
+            .description("Count of successful table session closes")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.close.total
+     * Counts total table session close attempts
+     */
+    @Bean
+    public Counter tableSessionCloseTotalCounter() {
+        return Counter.builder("table.session.close.total")
+            .description("Count of total table session close attempts")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.close.failure
+     * Counts failed table session closes
+     */
+    @Bean
+    public Counter tableSessionCloseFailureCounter() {
+        return Counter.builder("table.session.close.failure")
+            .description("Count of failed table session closes")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.active
+     * Tracks active table sessions (incremented on open, not decremented)
+     */
+    @Bean
+    public Counter tableSessionActiveCounter() {
+        return Counter.builder("table.session.active")
+            .description("Count of active table sessions (incremented only)")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.closed
+     * Counts total table sessions closed
+     */
+    @Bean
+    public Counter tableSessionClosedCounter() {
+        return Counter.builder("table.session.closed")
+            .description("Count of total table sessions closed")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Timer: notification.latency
+     * Umbral: < 500 ms
+     * Tracks notification latency for SSE
+     */
+    @Bean
+    public Timer notificationLatencyTimer() {
+        return Timer.builder("notification.latency")
+            .description("Latency of notifications in milliseconds")
+            .tag("module", "notification")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: notification.sent
+     * Counts successful notification sends
+     */
+    @Bean
+    public Counter notificationSentCounter() {
+        return Counter.builder("notification.sent")
+            .description("Count of successful notification sends")
+            .tag("module", "notification")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: notification.failure
+     * Counts failed notification sends
+     */
+    @Bean
+    public Counter notificationFailureCounter() {
+        return Counter.builder("notification.failure")
+            .description("Count of failed notification sends")
+            .tag("module", "notification")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.expired
+     * Umbral: rate < 10%
+     * Counts sessions expired by timeout
+     */
+    @Bean
+    public Counter tableSessionExpiredCounter() {
+        return Counter.builder("table.session.expired")
+            .description("Count of table sessions expired by timeout")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
+
+    /**
+     * Counter: table.session.total
+     * Counts total table sessions created
+     */
+    @Bean
+    public Counter tableSessionTotalCounter() {
+        return Counter.builder("table.session.total")
+            .description("Count of total table sessions created")
+            .tag("module", "table")
+            .register(meterRegistry);
+    }
 }
 
