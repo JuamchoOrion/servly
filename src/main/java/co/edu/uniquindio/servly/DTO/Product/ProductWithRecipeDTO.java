@@ -16,6 +16,7 @@ public class ProductWithRecipeDTO {
     private String name;
     private BigDecimal basePrice;
     private String description;
+    private String imageUrl;
     private List<ItemDetailDTO> recipeItems; // Items que componen el producto
 }
 

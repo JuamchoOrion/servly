@@ -38,8 +38,8 @@ public class Product {
     @JoinColumn(name = "recipe_id")
     private Recipe recipe;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = true)
     private ProductCategory category;
 
     @Column(name = "image_url", length = 500)

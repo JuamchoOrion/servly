@@ -47,6 +47,7 @@ public class ProductService {
                 .active(request.getActive() != null ? request.getActive() : true)
                 .deleted(false)
                 .deletedAt(null)
+                .imageUrl(request.getImageUrl())
                 .build();
 
         // Vincular receta si se proporciona
@@ -102,17 +103,18 @@ public class ProductService {
     }
 
     /**
-     * Obtener todos los productos (paginado) - solo no eliminados
+     * Obtener todos los productos (paginado) - solo no eliminados y sin categorías eliminadas
      */
     public Page<Product> getAllProducts(Pageable pageable) {
-        return productRepository.findByDeletedFalse(pageable);
+        // Usar query que asegura que las categorías no estén eliminadas o sean nulas
+        return productRepository.findActiveProductsWithActiveCategories(pageable);
     }
 
     /**
-     * Obtener productos activos (paginado) - solo no eliminados
+     * Obtener productos activos (paginado) - solo no eliminados y con categorías válidas
      */
     public Page<Product> getActiveProducts(Pageable pageable) {
-        return productRepository.findByActiveTrueAndDeletedFalse(pageable);
+        return productRepository.findActiveProductsWithActiveCategories(pageable);
     }
 
     /**

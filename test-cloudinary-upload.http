@@ -1,0 +1,96 @@
+### Test de subida de producto con imagen a Cloudinary
+
+@baseUrl = http://localhost:8081
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NjQ2Njg4NywiZXhwIjoxNzc2NTUzMjg3fQ.ENrKWcw5s-3nhoAKZ63pJMti-txRNybUM-bbOwlxOrQnf04R3_XzJkhALDPc9E3aMXu9m4JlaKEMmAMxFYU7sg
+
+### 1. Crear producto SIN imagen (JSON simple)
+### Para cuando NO tienes imagen aún
+POST {{baseUrl}}/api/admin/products
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pasta Carbonara Test",
+  "price": 14.99,
+  "description": "Pasta italiana clásica",
+  "categoryId": 2,
+  "active": true,
+  "recipeId": 3
+}
+
+###############################################
+### 2. Crear producto CON imagen (multipart)
+### IMPORTANTE: Primero debes tener una imagen real
+### Pasos:
+### 1. Busca una imagen en tu PC (ej: C:\Users\ramir\Pictures\photo.jpg)
+### 2. Reemplaza la ruta en "filename=" y en "< "
+### 3. O descarga una imagen de internet
+POST {{baseUrl}}/api/admin/products/with-image
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="name"
+
+Pasta Carbonara con Imagen
+------FormBoundary
+Content-Disposition: form-data; name="price"
+
+14.99
+------FormBoundary
+Content-Disposition: form-data; name="description"
+
+Pasta italiana clásica con queso y jamón
+------FormBoundary
+Content-Disposition: form-data; name="categoryId"
+
+2
+------FormBoundary
+Content-Disposition: form-data; name="active"
+
+true
+------FormBoundary
+Content-Disposition: form-data; name="recipeId"
+
+3
+------FormBoundary
+Content-Disposition: form-data; name="image"; filename="test-image.jpg"
+Content-Type: image/jpeg
+
+< C:\Users\ramir\Downloads\papas.jpg
+------FormBoundary--
+
+###############################################
+### 3. Ver producto creado
+GET {{baseUrl}}/api/admin/products/10
+Authorization: Bearer {{adminToken}}
+
+### 4. Listar todos los productos con paginación
+GET {{baseUrl}}/api/admin/products?page=0&size=20
+Authorization: Bearer {{adminToken}}
+
+### 5. Para CLIENTE - Obtener menú con imágenes
+GET {{baseUrl}}/api/menu/products
+Authorization: Bearer {{adminToken}}
+
+### 6. Para CLIENTE - Obtener productos paginados con imágenes
+GET {{baseUrl}}/api/menu/products/paginated?page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+###############################################
+### CÓMO USAR CON IMÁGENES:
+###
+### El endpoint "/api/admin/products/with-image" espera:
+### - name, price, description, categoryId, active, recipeId (como form-data)
+### - image (archivo multipart)
+###
+### Respuesta:
+### {
+###   "id": 10,
+###   "name": "Pasta Carbonara con Imagen",
+###   "price": 14.99,
+###   "imageUrl": "https://res.cloudinary.com/dvzmidfp6/image/upload/v.../productXXX.jpg"
+### }
+###
+### El imageUrl se llena automáticamente después de subir a Cloudinary
+

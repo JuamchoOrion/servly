@@ -112,6 +112,7 @@ public class ProductMenuService {
                 .name(product.getName())
                 .basePrice(product.getPrice())
                 .description(product.getDescription())
+                .imageUrl(product.getImageUrl())
                 .recipeItems(itemDetails)
                 .build();
     }
