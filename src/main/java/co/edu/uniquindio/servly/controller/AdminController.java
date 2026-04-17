@@ -12,11 +12,14 @@ import co.edu.uniquindio.servly.DTO.CreateRestaurantTableRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.RecipeCreateRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.RecipeDTO;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemDetailCreateRequest;
+import co.edu.uniquindio.servly.DTO.RecipeDetailDTO;
 import co.edu.uniquindio.servly.model.dto.metrics.AuthenticationMetricsDTO;
 import co.edu.uniquindio.servly.model.entity.Product;
 import co.edu.uniquindio.servly.model.entity.ProductCategory;
 import co.edu.uniquindio.servly.model.entity.RestaurantTable;
 import co.edu.uniquindio.servly.service.UserService;
+import co.edu.uniquindio.servly.service.CloudinaryService;
+import org.springframework.web.multipart.MultipartFile;
 import co.edu.uniquindio.servly.service.RecipeService;
 import co.edu.uniquindio.servly.service.AuditService;
 import co.edu.uniquindio.servly.service.ProductService;
@@ -26,7 +29,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,6 +59,7 @@ public class AdminController {
     private final ProductCategoryService productCategoryService;
     private final RecipeService recipeService;
     private final RestaurantTableService restaurantTableService;
+    private final CloudinaryService cloudinaryService;
     /**
      * Crea un empleado con contraseña temporal.
      * El empleado recibirá un email con:
@@ -201,7 +204,7 @@ public class AdminController {
      */
     @GetMapping("/recipes/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ResponseEntity<RecipeDTO> getRecipeById(@PathVariable Long id) {
+    public ResponseEntity<RecipeDetailDTO> getRecipeById(@PathVariable Long id) {
         return ResponseEntity.ok(recipeService.getRecipeById(id));
     }
 
@@ -331,13 +334,59 @@ public class AdminController {
     }
 
     /**
+     * POST /api/admin/products/with-image
+     * Crear producto con imagen (FormData)
+     *
+     * Ejemplo de uso con curl:
+     * curl -X POST http://localhost:8081/api/admin/products/with-image \
+     *   -H "Authorization: Bearer YOUR_TOKEN" \
+     *   -F "name=Pasta Carbonara" \
+     *   -F "price=12.99" \
+     *   -F "description=Pasta clásica italiana" \
+     *   -F "categoryId=1" \
+     *   -F "active=true" \
+     *   -F "recipeId=1" \
+     *   -F "image=@/ruta/a/imagen.jpg"
+     */
+    @PostMapping(value = "/products/with-image", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductDTO> createProductWithImage(
+            @RequestParam("name") String name,
+            @RequestParam("price") java.math.BigDecimal price,
+            @RequestParam("description") String description,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam("active") Boolean active,
+            @RequestParam(value = "recipeId", required = false) Long recipeId,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
+
+        CreateProductRequest request = CreateProductRequest.builder()
+                .name(name)
+                .price(price)
+                .description(description)
+                .productCategoryId(categoryId)
+                .active(active)
+                .recipeId(recipeId)
+                .build();
+
+        // Subir imagen a Cloudinary si existe
+        if (image != null && !image.isEmpty()) {
+            java.util.Map<String, String> uploadResult = cloudinaryService.uploadImage(image, "products");
+            String imageUrl = uploadResult.get("imageUrl");
+            request.setImageUrl(imageUrl);
+        }
+
+        Product product = productService.createProduct(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProductDTO.fromEntity(product));
+    }
+
+    /**
      * GET /api/admin/products
      * Listar productos (paginado)
      */
     @GetMapping("/products")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<Page<ProductDTO>> getAllProducts(
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+            @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(productService.getAllProducts(pageable).map(ProductDTO::fromEntity));
     }
 
@@ -348,7 +397,7 @@ public class AdminController {
     @GetMapping("/products/active")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<Page<ProductDTO>> getActiveProducts(
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+            @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(productService.getActiveProducts(pageable).map(ProductDTO::fromEntity));
     }
 
@@ -377,6 +426,48 @@ public class AdminController {
 
         Product product = productService.updateProduct(id, name, description, price, active);
         return ResponseEntity.ok(ProductDTO.fromEntity(product));
+    }
+
+    /**
+     * PUT /api/admin/products/{id}/with-image
+     * Actualizar producto con imagen
+     *
+     * Ejemplo de uso con curl:
+     * curl -X PUT http://localhost:8081/api/admin/products/1/with-image \
+     *   -H "Authorization: Bearer YOUR_TOKEN" \
+     *   -F "name=Pasta Carbonara Actualizada" \
+     *   -F "price=13.99" \
+     *   -F "description=Pasta clásica italiana mejorada" \
+     *   -F "active=true" \
+     *   -F "image=@/ruta/a/nueva-imagen.jpg"
+     */
+    @PutMapping(value = "/products/{id}/with-image", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductDTO> updateProductWithImage(
+            @PathVariable Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) java.math.BigDecimal price,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
+
+        Product product = productService.getProductById(id);
+
+        // Actualizar campos básicos
+        if (name != null) product.setName(name);
+        if (description != null) product.setDescription(description);
+        if (price != null) product.setPrice(price);
+        if (active != null) product.setActive(active);
+
+        // Subir nueva imagen a Cloudinary si existe
+        if (image != null && !image.isEmpty()) {
+            java.util.Map<String, String> uploadResult = cloudinaryService.uploadImage(image, "products");
+            String imageUrl = uploadResult.get("imageUrl");
+            product.setImageUrl(imageUrl);
+        }
+
+        Product updatedProduct = productService.updateProduct(id, product.getName(), product.getDescription(), product.getPrice(), product.getActive());
+        return ResponseEntity.ok(ProductDTO.fromEntity(updatedProduct));
     }
 
     /**

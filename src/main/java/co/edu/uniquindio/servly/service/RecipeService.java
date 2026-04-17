@@ -3,6 +3,8 @@ package co.edu.uniquindio.servly.service;
 import co.edu.uniquindio.servly.DTO.Inventory.ItemDetailCreateRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.RecipeCreateRequest;
 import co.edu.uniquindio.servly.DTO.Inventory.RecipeDTO;
+import co.edu.uniquindio.servly.DTO.RecipeDetailDTO;
+import co.edu.uniquindio.servly.DTO.Inventory.ItemDetailDTO;
 import co.edu.uniquindio.servly.exception.NotFoundException;
 import co.edu.uniquindio.servly.model.entity.Item;
 import co.edu.uniquindio.servly.model.entity.ItemDetail;
@@ -75,13 +77,29 @@ public class RecipeService {
     }
 
     /**
-     * Obtiene una receta por ID.
+     * Obtiene una receta por ID con detalles completos de items.
      */
     @Transactional(readOnly = true)
-    public RecipeDTO getRecipeById(Long id) {
+    public RecipeDetailDTO getRecipeById(Long id) {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Receta no encontrada: " + id));
-        return RecipeDTO.fromEntity(recipe);
+
+        return RecipeDetailDTO.builder()
+                .id(recipe.getId())
+                .name(recipe.getName())
+                .quantity(recipe.getQuantity())
+                .description(recipe.getDescription())
+                .itemDetailList(recipe.getItemDetailList().stream()
+                        .map(itemDetail -> ItemDetailDTO.builder()
+                                .id(itemDetail.getId())
+                                .quantity(itemDetail.getQuantity())
+                                .annotation(itemDetail.getAnnotation())
+                                .isOptional(itemDetail.getIsOptional())
+                                .itemId(itemDetail.getItem() != null ? itemDetail.getItem().getId() : null)
+                                .recipeId(itemDetail.getRecipe() != null ? itemDetail.getRecipe().getId() : null)
+                                .build())
+                        .toList())
+                .build();
     }
 
     /**

@@ -30,5 +30,7 @@ public class CreateProductRequest {
     // Campo opcional para vincular una receta al producto
     // Si se proporciona, el producto usará esa receta para descontar inventario
     private Long recipeId;
-}
 
+    // URL de la imagen del producto (almacenada en Cloudinary)
+    private String imageUrl;
+}

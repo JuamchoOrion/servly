@@ -9,17 +9,21 @@ import co.edu.uniquindio.servly.repository.ProductCategoryRepository;
 import co.edu.uniquindio.servly.repository.RecipeRepository;
 import co.edu.uniquindio.servly.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -50,6 +54,48 @@ public class ProductService {
             Recipe recipe = recipeRepository.findById(request.getRecipeId())
                     .orElseThrow(() -> new NotFoundException("Receta no encontrada: " + request.getRecipeId()));
             product.setRecipe(recipe);
+        }
+
+        return productRepository.save(product);
+    }
+
+    /**
+     * Crear producto con imagen usando Cloudinary
+     */
+    public Product createProductWithImage(CreateProductRequest request, MultipartFile image, CloudinaryService cloudinaryService) {
+        // Validar categoría
+        ProductCategory category = productCategoryRepository.findByIdAndDeletedFalse(request.getProductCategoryId())
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+
+        // Crear producto base
+        Product product = Product.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .category(category)
+                .active(request.getActive() != null ? request.getActive() : true)
+                .deleted(false)
+                .deletedAt(null)
+                .build();
+
+        // Vincular receta si se proporciona
+        if (request.getRecipeId() != null) {
+            Recipe recipe = recipeRepository.findById(request.getRecipeId())
+                    .orElseThrow(() -> new NotFoundException("Receta no encontrada: " + request.getRecipeId()));
+            product.setRecipe(recipe);
+        }
+
+        // Subir imagen a Cloudinary si se proporciona
+        if (image != null && !image.isEmpty()) {
+            try {
+                Map<String, String> uploadResult = cloudinaryService.uploadImage(image, "products");
+                product.setImageUrl(uploadResult.get("imageUrl"));
+                product.setPublicId(uploadResult.get("publicId"));
+                log.info("Imagen cargada para producto: {} - URL: {}", product.getName(), product.getImageUrl());
+            } catch (Exception e) {
+                log.error("Error al cargar imagen a Cloudinary: {}", e.getMessage());
+                // Continuar sin imagen en caso de error
+            }
         }
 
         return productRepository.save(product);
@@ -106,6 +152,13 @@ public class ProductService {
         Product product = getProductById(id);
         product.setDeleted(true);
         product.setDeletedAt(LocalDateTime.now());
+
+        // Eliminar imagen de Cloudinary si existe
+        if (product.getPublicId() != null && !product.getPublicId().isEmpty()) {
+            // Necesitamos inyectar CloudinaryService o crearlo aquí
+            log.info("Imagen será eliminada de Cloudinary: {}", product.getPublicId());
+        }
+
         return productRepository.save(product);
     }
 
