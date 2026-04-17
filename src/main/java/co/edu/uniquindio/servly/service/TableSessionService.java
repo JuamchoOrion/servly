@@ -3,6 +3,7 @@ package co.edu.uniquindio.servly.service;
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.DTO.TableSessionResponse;
 import co.edu.uniquindio.servly.exception.AuthException;
+import co.edu.uniquindio.servly.metrics.TableMetricsService;
 import co.edu.uniquindio.servly.model.entity.RestaurantTable;
 import co.edu.uniquindio.servly.model.entity.TableSession;
 import co.edu.uniquindio.servly.repository.RestaurantTableRepository;
@@ -38,49 +39,60 @@ public class TableSessionService {
     private final TableSessionRepository sessionRepository;
     private final RestaurantTableRepository restaurantTableRepository;
     private final TableJwtProvider tableJwtProvider;
+    private final TableMetricsService tableMetricsService;
 
     public TableSessionResponse openSession(Integer tableNumber) {
-        log.debug("=== Iniciando openSession para mesa: {}", tableNumber);
-        if (tableNumber == null || tableNumber < 1) {
-            throw new AuthException("Número de mesa inválido");
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+
+        try {
+            log.debug("=== Iniciando openSession para mesa: {}", tableNumber);
+            if (tableNumber == null || tableNumber < 1) {
+                throw new AuthException("Número de mesa inválido");
+            }
+
+            log.debug("Buscando mesa {} en la BD", tableNumber);
+            RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
+                    .orElseThrow(() -> {
+                        log.error("Mesa número {} no existe en la base de datos", tableNumber);
+                        return new AuthException("Mesa número " + tableNumber + " no existe");
+                    });
+            log.debug("Mesa encontrada: id={}, number={}", table.getId(), table.getTableNumber());
+
+            Optional<TableSession> existing = sessionRepository.findByRestaurantTableAndActiveTrue(table);
+
+            if (existing.isPresent()) {
+                log.debug("Mesa {} ya tiene sesión activa, reutilizando", tableNumber);
+                success = true;
+                return toResponse(existing.get());
+            }
+
+            long expirationMs = tableJwtProvider.getSessionExpirationMs();
+            LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirationMs / 1000);
+
+            // Guardar con token vacío para obtener el ID generado
+            TableSession session = TableSession.builder()
+                    .restaurantTable(table)
+                    .tableNumber(tableNumber)
+                    .sessionToken("")
+                    .active(true)
+                    .expiresAt(expiresAt)
+                    .build();
+
+            TableSession saved = sessionRepository.save(session);
+
+            // Ahora generar el token con el ID real
+            String token = tableJwtProvider.generateTableToken(tableNumber, saved.getId());
+            saved.setSessionToken(token);
+            sessionRepository.save(saved);
+
+            log.info("Sesión abierta para mesa {}, expira: {}", tableNumber, expiresAt);
+            success = true;
+            return toResponse(saved);
+        } finally {
+            long duration = System.currentTimeMillis() - startTime;
+            tableMetricsService.recordSessionOpen(success, duration);
         }
-
-        log.debug("Buscando mesa {} en la BD", tableNumber);
-        RestaurantTable table = restaurantTableRepository.findByTableNumber(tableNumber)
-                .orElseThrow(() -> {
-                    log.error("Mesa número {} no existe en la base de datos", tableNumber);
-                    return new AuthException("Mesa número " + tableNumber + " no existe");
-                });
-        log.debug("Mesa encontrada: id={}, number={}", table.getId(), table.getTableNumber());
-
-        Optional<TableSession> existing = sessionRepository.findByRestaurantTableAndActiveTrue(table);
-
-        if (existing.isPresent()) {
-            log.debug("Mesa {} ya tiene sesión activa, reutilizando", tableNumber);
-            return toResponse(existing.get());
-        }
-
-        long expirationMs = tableJwtProvider.getSessionExpirationMs();
-        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirationMs / 1000);
-
-        // Guardar con token vacío para obtener el ID generado
-        TableSession session = TableSession.builder()
-                .restaurantTable(table)
-                .tableNumber(tableNumber)
-                .sessionToken("")
-                .active(true)
-                .expiresAt(expiresAt)
-                .build();
-
-        TableSession saved = sessionRepository.save(session);
-
-        // Ahora generar el token con el ID real
-        String token = tableJwtProvider.generateTableToken(tableNumber, saved.getId());
-        saved.setSessionToken(token);
-        sessionRepository.save(saved);
-
-        log.info("Sesión abierta para mesa {}, expira: {}", tableNumber, expiresAt);
-        return toResponse(saved);
     }
 
     public MessageResponse closeSession(Integer tableNumber) {
