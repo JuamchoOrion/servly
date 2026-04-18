@@ -40,6 +40,7 @@ public class OrderService {
     private final InventoryMetricsService metricsService;
     private final ProductAvailabilityService availabilityService;
     private final OrderNotificationService notificationService;
+    private final HelpAlertService helpAlertService;
 
     /**
      * Crea orden de mesa
@@ -451,6 +452,18 @@ public class OrderService {
     private BigDecimal calculatePriceWithVariations(Product product, java.util.Map<Long, Integer> itemQuantityOverrides) {
         // El precio es fijo del producto, las variaciones no lo modifican
         return product.getPrice();
+    }
+
+    /**
+     * Crea una alerta de ayuda para una orden específica.
+     * No cambia el estado de la orden, solo registra la solicitud de ayuda.
+     * 
+     * @param orderId ID de la orden
+     * @param tableNumber Número de mesa
+     */
+    public void createHelpAlert(Long orderId, Integer tableNumber) {
+        helpAlertService.createHelpAlert(orderId, tableNumber);
+        log.info("Alerta de ayuda creada para orden: {} de mesa: {}", orderId, tableNumber);
     }
 
     /**

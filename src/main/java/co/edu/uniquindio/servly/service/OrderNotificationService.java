@@ -1,5 +1,6 @@
 package co.edu.uniquindio.servly.service;
 
+import co.edu.uniquindio.servly.model.entity.HelpAlert;
 import co.edu.uniquindio.servly.model.enums.OrderTableState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -135,4 +136,83 @@ public class OrderNotificationService {
             Integer tableNumber,
             String message
     ) {}
+
+    /**
+     * Payload del evento SSE para alertas de ayuda.
+     */
+    public record HelpAlertEvent(
+            Long alertId,
+            Long orderId,
+            Integer tableNumber,
+            String status,
+            String message
+    ) {}
+
+    /**
+     * Emite una notificación de nueva alerta de ayuda a todos los listeners de la mesa.
+     * Se llama desde HelpAlertService cuando el cliente solicita ayuda.
+     */
+    public void notifyHelpAlert(Integer tableNumber, Long orderId, Long alertId) {
+        List<SseEmitter> tableEmitters = emitters.get(tableNumber);
+        if (tableEmitters == null || tableEmitters.isEmpty()) {
+            log.debug("Sin suscriptores activos para mesa {} al crear alerta de ayuda {}", tableNumber, alertId);
+            return;
+        }
+
+        HelpAlertEvent event = new HelpAlertEvent(
+                alertId, orderId, tableNumber, "PENDING",
+                "Se ha solicitado ayuda del mesero. El personal se acercará pronto."
+        );
+
+        // Iterar en copia para evitar ConcurrentModificationException
+        List<SseEmitter> snapshot = List.copyOf(tableEmitters);
+        for (SseEmitter emitter : snapshot) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("help-alert")
+                        .data(event));
+                log.debug("Notificación de ayuda enviada a mesa {} → alerta {}", tableNumber, alertId);
+            } catch (IOException e) {
+                log.warn("Error enviando notificación de ayuda a mesa {}: {}. Eliminando emitter.", tableNumber, e.getMessage());
+                tableEmitters.remove(emitter);
+            }
+        }
+    }
+
+    /**
+     * Emite una notificación de cambio de estado de alerta de ayuda.
+     * Se llama desde HelpAlertService cuando se actualiza el estado de la alerta.
+     */
+    public void notifyHelpAlertStatusChange(Integer tableNumber, Long orderId, Long alertId, HelpAlert.AlertStatus newStatus) {
+        List<SseEmitter> tableEmitters = emitters.get(tableNumber);
+        if (tableEmitters == null || tableEmitters.isEmpty()) {
+            log.debug("Sin suscriptores activos para mesa {} al cambiar alerta {} a {}", tableNumber, alertId, newStatus);
+            return;
+        }
+
+        String message = switch (newStatus) {
+            case ATTENDED -> "El mesero está llegando a su mesa. ¡Mantente atento!";
+            case RESOLVED -> "Tu solicitud de ayuda ha sido resuelta. ¿Necesitas algo más?";
+            default -> "El estado de tu solicitud de ayuda ha sido actualizado.";
+        };
+
+        HelpAlertEvent event = new HelpAlertEvent(
+                alertId, orderId, tableNumber, newStatus.toString(), message
+        );
+
+        // Iterar en copia para evitar ConcurrentModificationException
+        List<SseEmitter> snapshot = List.copyOf(tableEmitters);
+        for (SseEmitter emitter : snapshot) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("help-alert-status")
+                        .data(event));
+                log.debug("Notificación de cambio de estado de ayuda enviada a mesa {} → alerta {} estado {}", 
+                        tableNumber, alertId, newStatus);
+            } catch (IOException e) {
+                log.warn("Error enviando notificación de cambio de estado a mesa {}: {}. Eliminando emitter.", tableNumber, e.getMessage());
+                tableEmitters.remove(emitter);
+            }
+        }
+    }
 }

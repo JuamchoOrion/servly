@@ -109,6 +109,8 @@ public class OrderController {
         String principal = (String) auth.getPrincipal();
         Integer tableNumber = Integer.parseInt(principal.split(":")[1]);
 
+        log.info("Cliente solicitando ayuda para orden: {}, mesa: {}", id, tableNumber);
+
         // Validar que la orden pertenece a la mesa del cliente
         OrderDTO order = orderService.getOrderById(id);
         if (!order.getTableNumber().equals(tableNumber)) {
@@ -116,8 +118,9 @@ public class OrderController {
                     .body(new MessageResponse("La orden no pertenece a esta mesa"));
         }
 
-        log.info("Alerta de ayuda registrada para mesa: {}, orden: {}", tableNumber, id);
-        // TODO: Integrar con WebSocket para notificar mesero en tiempo real
+        // Crear alerta de ayuda
+        orderService.createHelpAlert(id, tableNumber);
+
         return ResponseEntity.ok(new MessageResponse(
                 "Ayuda solicitada. El mesero acudirá en breve a su mesa."));
     }
