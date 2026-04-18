@@ -137,8 +137,45 @@ public class OrderController {
     // ============ STAFF - GESTIÓN DE ÓRDENES (Requiere User login con rol) ============
 
     /**
-     * COCINA: Obtener órdenes pendientes
-     * Requiere: User login con rol COCINA o ADMIN
+     * MESERO: Crear orden de mesa
+     * El mesero usa esta función para crear una orden directamente sin QR
+     *
+     * Seguridad: JwtAuthenticationFilter valida JWT de usuario
+     * Requiere: User login con rol MESERO o ADMIN
+     *
+     * Flujo:
+     * 1. Mesero selecciona una mesa
+     * 2. Agrega productos y cantidades
+     * 3. Se validan items disponibles en inventory
+     * 4. Se crea orden PENDING (sin descontar inventory aún)
+     * 5. Cliente recibe notificación de su orden
+     *
+     * Ejemplo request:
+     * {
+     *   "tableNumber": 5,
+     *   "products": [
+     *     {
+     *       "productId": 1,
+     *       "quantity": 2,
+     *       "itemQuantityOverrides": {"3": 2, "5": 1}
+     *     }
+     *   ],
+     *   "notes": "Sin queso en la hamburguesa"
+     * }
+     *
+     * @param request Contiene mesa, productos y notas
+     * @return OrderDTO con la orden creada
+     */
+    @PostMapping("/api/staff/orders/create")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MESERO')")
+    public ResponseEntity<OrderDTO> createTableOrderFromStaff(
+            @Valid @RequestBody CreateStaffOrderRequest request) {
+        log.info("Mesero creando orden para mesa: {}", request.getTableNumber());
+        OrderDTO order = orderService.createTableOrderFromStaff(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+     /** Requiere: User login con rol COCINA o ADMIN
      * Seguridad: JwtAuthenticationFilter valida JWT de user
      */
     @GetMapping("/api/staff/orders/pending")

@@ -466,6 +466,90 @@ public class OrderService {
     }
 
     /**
+     * MESERO: Crear orden de mesa
+     * El mesero (staff) usa esta función para crear una orden directamente
+     * sin que el cliente escanee QR
+     * 
+     * Flujo:
+     * 1. Validar que la mesa existe y está disponible
+     * 2. Validar productos y sus items
+     * 3. Crear orden en estado PENDING
+     * 4. NO descontar inventory (se descuenta al servir)
+     * 
+     * @param request Contiene tableNumber, products y notas
+     * @return OrderDTO con detalles de la orden creada
+     */
+    public OrderDTO createTableOrderFromStaff(CreateStaffOrderRequest request) {
+        log.info("Mesero creando orden para mesa: {}", request.getTableNumber());
+
+        // Validar que la mesa existe
+        RestaurantTable table = tableRepository.findByTableNumber(request.getTableNumber())
+                .orElseThrow(() -> new NotFoundException("Mesa no encontrada: " + request.getTableNumber()));
+
+        // Obtener o crear TableSource
+        TableSource tableSource = tableSourceRepository.findByTableNumber(request.getTableNumber())
+                .orElseGet(() -> {
+                    TableSource newTableSource = new TableSource();
+                    newTableSource.setRestaurantTable(table);
+                    newTableSource.setTableNumber(request.getTableNumber());
+                    return tableSourceRepository.save(newTableSource);
+                });
+
+        // Procesar productos
+        List<Order_detail> details = new java.util.ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (OrderItemVariationDTO productRequest : request.getProducts()) {
+            Product product = productRepository.findById(productRequest.getProductId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Producto no encontrado: " + productRequest.getProductId()));
+
+            // VALIDACIÓN: ¿Hay items para la receta con las variaciones?
+            validateRecipeWithVariations(product, productRequest.getQuantity(), productRequest.getItemQuantityOverrides());
+
+            // Calcular precio: base + items extras
+            BigDecimal unitPrice = calculatePriceWithVariations(product, productRequest.getItemQuantityOverrides());
+
+            Order_detail detail = Order_detail.builder()
+                    .quantity(productRequest.getQuantity())
+                    .unitPrice(unitPrice)
+                    .taxPercent(BigDecimal.valueOf(0.08))
+                    .subtotal(unitPrice.multiply(BigDecimal.valueOf(productRequest.getQuantity())))
+                    .product(product)
+                    .build();
+
+            details.add(detail);
+            total = total.add(detail.getSubtotal());
+        }
+
+        // Crear orden
+        Order order = Order.builder()
+                .date(LocalDate.now())
+                .total(total)
+                .orderType(OrderType.TABLE)
+                .status(OrderTableState.PENDING)
+                .source(tableSource)
+                .orderDetailList(details)
+
+                .build();
+
+        // Asignar orden a cada detalle (relación bidireccional)
+        details.forEach(detail -> detail.setOrder(order));
+
+        // Guardar orden
+        Order savedOrder = orderRepository.save(order);
+        log.info("Orden creada para mesa {} con ID: {}", request.getTableNumber(), savedOrder.getId());
+
+        // Convertir a DTO
+        OrderDTO orderDTO = toDTO(savedOrder);
+
+        // Emitir notificación a cliente (si está en la mesa)
+        emitNotificationAfterCommit(orderDTO);
+
+        return orderDTO;
+    }
+
+    /**
      * Emite la notificación SSE al cliente de la mesa DESPUÉS de que la transacción
      * se haya confirmado en BD (afterCommit), evitando notificar un estado que aún
      * podría revertirse por rollback.
