@@ -29,15 +29,11 @@ public class ProductDTO {
         String categoryName = null;
         Long categoryId = null;
 
-        try {
-            if (product.getCategory() != null) {
-                categoryId = product.getCategory().getId();
-                categoryName = product.getCategory().getName();
-            }
-        } catch (Exception e) {
-            // Categoría no encontrada (deletada o eliminada)
-            categoryId = null;
-            categoryName = null;
+        // Acceder a la categoría sin capturar excepciones
+        // ya que debe estar cargada con FETCH JOIN en las queries
+        if (product.getCategory() != null) {
+            categoryId = product.getCategory().getId();
+            categoryName = product.getCategory().getName();
         }
 
         return ProductDTO.builder()

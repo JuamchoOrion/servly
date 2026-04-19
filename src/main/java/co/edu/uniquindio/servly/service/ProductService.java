@@ -104,10 +104,10 @@ public class ProductService {
 
     /**
      * Obtener todos los productos (paginado) - solo no eliminados y sin categorías eliminadas
+     * Incluye productos activos e inactivos (para admin)
      */
     public Page<Product> getAllProducts(Pageable pageable) {
-        // Usar query que asegura que las categorías no estén eliminadas o sean nulas
-        return productRepository.findActiveProductsWithActiveCategories(pageable);
+        return productRepository.findAllProductsWithActiveCategories(pageable);
     }
 
     /**

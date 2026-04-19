@@ -2,7 +2,7 @@
 ### Archivo de pruebas para todos los endpoints de productos
 
 @base = http://localhost:8081
-@token = tu_token_aqui
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NjYzNDIxMiwiZXhwIjoxNzc2NzIwNjEyfQ.zEyEGFBgzDEdFKGNA59Aae82JgyXRSo9W4ls0-XbChcfDhA7EvUaXcK5DqmqfVOsiwmI8Hf1C-B1Afcdp5zaqw
 
 ### ================================
 ### CRUD PRODUCTOS - CREAR
