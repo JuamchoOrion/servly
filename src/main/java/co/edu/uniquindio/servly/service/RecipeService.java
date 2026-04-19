@@ -39,6 +39,21 @@ public class RecipeService {
     private final ItemRepository itemRepository;
 
     /**
+     * Busca recetas por nombre si la query tiene más de 2 caracteres.
+     * Si la query es nula o corta, devuelve todas las recetas.
+     */
+    @Transactional(readOnly = true)
+    public List<Recipe> searchRecipes(String query) {
+        if (query != null && query.trim().length() > 2) {
+            List<Recipe> found = recipeRepository.findByNameContainingIgnoreCase(query.trim());
+            if (!found.isEmpty()) {
+                return found;
+            }
+        }
+        return recipeRepository.findAll();
+    }
+
+    /**
      * Crea una nueva receta con sus ItemDetails.
      *
      * @param request Contiene nombre, descripción y lista de itemDetails
