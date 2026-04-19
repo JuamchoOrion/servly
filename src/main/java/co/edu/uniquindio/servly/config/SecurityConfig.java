@@ -129,6 +129,7 @@ public class SecurityConfig {
                                 "/api/client/session",       // Escaneo QR
                                 "/api/products/active",      // Menú digital para clientes
                                 "/api/menu/products",        // Menú con paginación
+                                "/api/menu/categories",      // Categorías de productos
                                 "/api/products/**",          // Detalles de productos
                                 "/oauth2/**",
                                 "/login/oauth2/**"

@@ -373,19 +373,30 @@ public class OrderService {
 
     /**
      * Valida las transiciones de estado válidas
+     * IMPORTANTE: CANCELLED puede ocurrir desde cualquier estado EXCEPTO PAID
      */
     private void validateStatusTransition(OrderTableState currentStatus, OrderTableState newStatus) {
+        // Permitir cancelación desde cualquier estado EXCEPTO PAID y CANCELLED
+        if (newStatus.equals(OrderTableState.CANCELLED)) {
+            if (currentStatus.equals(OrderTableState.PAID)) {
+                throw new IllegalStateException("No se puede cancelar una orden ya PAGADA");
+            }
+            if (currentStatus.equals(OrderTableState.CANCELLED)) {
+                throw new IllegalStateException("La orden ya está CANCELADA");
+            }
+            return; // Cancelación permitida desde PENDING, IN_PREPARATION, SERVED
+        }
+
+        // Validar transiciones normales (no cancelación)
         switch (currentStatus) {
             case PENDING -> {
-                if (!newStatus.equals(OrderTableState.IN_PREPARATION) &&
-                    !newStatus.equals(OrderTableState.CANCELLED)) {
-                    throw new IllegalStateException("De PENDING solo se puede ir a IN_PREPARATION o CANCELLED");
+                if (!newStatus.equals(OrderTableState.IN_PREPARATION)) {
+                    throw new IllegalStateException("De PENDING solo se puede ir a IN_PREPARATION");
                 }
             }
             case IN_PREPARATION -> {
-                if (!newStatus.equals(OrderTableState.SERVED) &&
-                    !newStatus.equals(OrderTableState.CANCELLED)) {
-                    throw new IllegalStateException("De IN_PREPARATION solo se puede ir a SERVED o CANCELLED");
+                if (!newStatus.equals(OrderTableState.SERVED)) {
+                    throw new IllegalStateException("De IN_PREPARATION solo se puede ir a SERVED");
                 }
             }
             case SERVED -> {

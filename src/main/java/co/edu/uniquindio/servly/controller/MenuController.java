@@ -1,6 +1,7 @@
 package co.edu.uniquindio.servly.controller;
 
 import co.edu.uniquindio.servly.DTO.Product.ProductWithRecipeDTO;
+import co.edu.uniquindio.servly.model.entity.ProductCategory;
 import co.edu.uniquindio.servly.service.ProductMenuService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +76,18 @@ public class MenuController {
         log.info("Cliente consultando producto: {}", id);
         ProductWithRecipeDTO dto = productMenuService.getProductById(id);
         return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Obtener todas las categorías de productos activas
+     * GET /api/menu/categories
+     * Acceso: Público (sin autenticación)
+     */
+    @GetMapping("/menu/categories")
+    public ResponseEntity<List<ProductCategory>> getCategories() {
+        log.info("Cliente consultando categorías de productos");
+        List<ProductCategory> categories = productMenuService.getActiveCategories();
+        return ResponseEntity.ok(categories);
     }
 }
 

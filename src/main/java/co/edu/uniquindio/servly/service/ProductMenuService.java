@@ -4,7 +4,9 @@ import co.edu.uniquindio.servly.DTO.Product.ProductWithRecipeDTO;
 import co.edu.uniquindio.servly.DTO.Product.ItemDetailDTO;
 import co.edu.uniquindio.servly.model.entity.Product;
 import co.edu.uniquindio.servly.model.entity.Recipe;
+import co.edu.uniquindio.servly.model.entity.ProductCategory;
 import co.edu.uniquindio.servly.repository.ProductRepository;
+import co.edu.uniquindio.servly.repository.ProductCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class ProductMenuService {
 
     private final ProductRepository productRepository;
+    private final ProductCategoryRepository productCategoryRepository;
 
     /**
      * Obtener todos los productos activos con paginación
@@ -65,6 +68,15 @@ public class ProductMenuService {
                 .orElseThrow(() -> new co.edu.uniquindio.servly.exception.NotFoundException(
                         "Producto no encontrado o no está disponible"));
         return toProductWithRecipeDTO(product);
+    }
+
+    /**
+     * Obtener todas las categorías de productos activas
+     */
+    @Transactional(readOnly = true)
+    public List<ProductCategory> getActiveCategories() {
+        log.info("Obteniendo categorías de productos activas");
+        return productCategoryRepository.findByActiveTrueAndDeletedFalse();
     }
 
     /**
@@ -113,6 +125,8 @@ public class ProductMenuService {
                 .basePrice(product.getPrice())
                 .description(product.getDescription())
                 .imageUrl(product.getImageUrl())
+                .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
+                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .recipeItems(itemDetails)
                 .build();
     }
