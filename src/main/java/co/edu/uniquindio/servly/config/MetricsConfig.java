@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -22,7 +23,7 @@ public class MetricsConfig {
      * Constructor con inyección de dependencias de MeterRegistry.
      * @param meterRegistry Registro central de Micrometer
      */
-    public MetricsConfig(MeterRegistry meterRegistry) {
+    public MetricsConfig(@Lazy MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
     }
 
