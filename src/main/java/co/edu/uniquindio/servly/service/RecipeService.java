@@ -41,16 +41,19 @@ public class RecipeService {
     /**
      * Busca recetas por nombre si la query tiene más de 2 caracteres.
      * Si la query es nula o corta, devuelve todas las recetas.
+     *
+     * Usa eager loading FETCH para evitar LazyInitializationException
+     * cuando se accede a itemDetailList en RecipeChatResponse
      */
     @Transactional(readOnly = true)
     public List<Recipe> searchRecipes(String query) {
         if (query != null && query.trim().length() > 2) {
-            List<Recipe> found = recipeRepository.findByNameContainingIgnoreCase(query.trim());
+            List<Recipe> found = recipeRepository.findByNameContainingIgnoreCaseEager(query.trim());
             if (!found.isEmpty()) {
                 return found;
             }
         }
-        return recipeRepository.findAll();
+        return recipeRepository.findAllEager();
     }
 
     /**
