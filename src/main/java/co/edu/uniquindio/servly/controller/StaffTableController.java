@@ -2,8 +2,7 @@ package co.edu.uniquindio.servly.controller;
 
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.DTO.RestaurantTableDTO;
-import co.edu.uniquindio.servly.model.entity.RestaurantTable;
-import co.edu.uniquindio.servly.service.RestaurantTableService;
+import co.edu.uniquindio.servly.service.RestaurantTableStaffService;
 import co.edu.uniquindio.servly.service.TableSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +31,7 @@ import java.util.List;
 public class StaffTableController {
 
     private final TableSessionService tableSessionService;
-    private final RestaurantTableService restaurantTableService;
+    private final RestaurantTableStaffService restaurantTableStaffService;
 
     // ============ LISTAR Y OBTENER MESAS ============
 
@@ -42,10 +41,7 @@ public class StaffTableController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER')")
     public ResponseEntity<List<RestaurantTableDTO>> getAllTables() {
-        List<RestaurantTable> tables = restaurantTableService.getAllTables();
-        List<RestaurantTableDTO> dtos = tables.stream()
-                .map(RestaurantTableDTO::fromEntity)
-                .toList();
+        List<RestaurantTableDTO> dtos = restaurantTableStaffService.getAllTablesForStaff();
         return ResponseEntity.ok(dtos);
     }
 
@@ -55,8 +51,8 @@ public class StaffTableController {
     @GetMapping("/{tableNumber}")
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER')")
     public ResponseEntity<RestaurantTableDTO> getTable(@PathVariable Integer tableNumber) {
-        RestaurantTable table = restaurantTableService.getTableByNumber(tableNumber);
-        return ResponseEntity.ok(RestaurantTableDTO.fromEntity(table));
+        RestaurantTableDTO dto = restaurantTableStaffService.getTableByNumberForStaff(tableNumber);
+        return ResponseEntity.ok(dto);
     }
 
     // ============ OPERACIONES DE SESIÓN ============
@@ -66,8 +62,9 @@ public class StaffTableController {
      */
     @DeleteMapping("/{tableNumber}/session")
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER')")
-    public MessageResponse closeTableSession(@PathVariable Integer tableNumber) {
-        return tableSessionService.closeSession(tableNumber);
+    public ResponseEntity<MessageResponse> closeTableSession(@PathVariable Integer tableNumber) {
+        MessageResponse response = tableSessionService.closeSession(tableNumber);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -75,64 +72,8 @@ public class StaffTableController {
      */
     @GetMapping("/{tableNumber}/session/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'WAITER')")
-    public MessageResponse getTableStatus(@PathVariable Integer tableNumber) {
-        return new MessageResponse(
-                tableSessionService.isTableActive(tableNumber) ? "true" : "false");
-    }
-
-    // ============ OPERACIONES DE ADMINISTRACIÓN (ADMIN ONLY) ============
-
-    /**
-     * ADMIN: Crear una nueva mesa
-     */
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RestaurantTableDTO> createTable(
-            @RequestParam Integer tableNumber,
-            @RequestParam Integer capacity,
-            @RequestParam(required = false) String location) {
-
-        RestaurantTable table = restaurantTableService.createTable(tableNumber, capacity, location);
-        return ResponseEntity.ok(RestaurantTableDTO.fromEntity(table));
-    }
-
-    /**
-     * ADMIN: Actualizar estado de una mesa
-     */
-    @PatchMapping("/{tableNumber}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RestaurantTableDTO> updateTableStatus(
-            @PathVariable Integer tableNumber,
-            @RequestParam RestaurantTable.TableStatus status) {
-
-        RestaurantTable table = restaurantTableService.updateTableStatus(tableNumber, status);
-        return ResponseEntity.ok(RestaurantTableDTO.fromEntity(table));
-    }
-
-    /**
-     * ADMIN: Obtener mesas por estado
-     */
-    @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<RestaurantTableDTO>> getTablesByStatus(
-            @PathVariable RestaurantTable.TableStatus status) {
-
-        List<RestaurantTable> tables = restaurantTableService.getTablesByStatus(status);
-        List<RestaurantTableDTO> dtos = tables.stream()
-                .map(RestaurantTableDTO::fromEntity)
-                .toList();
-        return ResponseEntity.ok(dtos);
-    }
-
-    /**
-     * ADMIN: Eliminar una mesa
-     */
-    @DeleteMapping("/{tableNumber}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<MessageResponse> deleteTable(
-            @PathVariable Integer tableNumber) {
-
-        restaurantTableService.deleteTable(tableNumber);
-        return ResponseEntity.ok(new MessageResponse("Mesa " + tableNumber + " eliminada correctamente"));
+    public ResponseEntity<MessageResponse> getTableStatus(@PathVariable Integer tableNumber) {
+        boolean isActive = tableSessionService.isTableActive(tableNumber);
+        return ResponseEntity.ok(new MessageResponse(isActive ? "true" : "false"));
     }
 }

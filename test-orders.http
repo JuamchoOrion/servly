@@ -1,0 +1,260 @@
+### === ÓRDENES - CLIENTE ===
+
+### 1. Abrir sesión escaneando QR (Get sessionToken)
+GET http://localhost:8081/api/client/session?table=5
+
+### 2. Crear orden de mesa
+POST http://localhost:8081/api/client/orders
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+{
+  "tableNumber": 5,
+  "items": [
+    {
+      "itemId": 15,
+      "quantity": 2
+    },
+    {
+      "itemId": 18,
+      "quantity": 1
+    }
+  ]
+}
+
+### 3. Ver mis órdenes activas
+GET http://localhost:8081/api/client/orders?tableNumber=5
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+### 4. Ver detalles de una orden específica
+GET http://localhost:8081/api/client/orders/1
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+### 5. Solicitar ayuda del mesero
+POST http://localhost:8081/api/client/orders/1/request-help
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+### 6. Confirmar entrega del plato
+PATCH http://localhost:8081/api/client/orders/1/confirm-delivery
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+---
+
+### === ÓRDENES - STAFF (Cocina/Mesero) ===
+
+### 7. Ver órdenes pendientes (Cocina)
+GET http://localhost:8081/api/staff/orders/pending
+Authorization: Bearer <STAFF_TOKEN>
+
+### 8. Ver órdenes en preparación
+GET http://localhost:8081/api/staff/orders/in-preparation
+Authorization: Bearer <STAFF_TOKEN>
+
+### 9. Ver todas las órdenes de una mesa
+GET http://localhost:8081/api/staff/tables/5/orders
+Authorization: Bearer <STAFF_TOKEN>
+
+### 10. Actualizar estado de orden (PENDING → IN_PREPARATION)
+PATCH http://localhost:8081/api/staff/orders/1/status
+Content-Type: application/json
+Authorization: Bearer <STAFF_TOKEN>
+
+{
+  "status": "IN_PREPARATION",
+  "notes": "Pedido recibido por cocina"
+}
+
+### 11. Actualizar estado (IN_PREPARATION → SERVED)
+PATCH http://localhost:8081/api/staff/orders/1/status
+Content-Type: application/json
+Authorization: Bearer <STAFF_TOKEN>
+
+{
+  "status": "SERVED",
+  "notes": "Plato listo, enviando a mesa"
+}
+
+### 12. Generar factura/cuenta
+GET http://localhost:8081/api/staff/orders/1/invoice
+Authorization: Bearer <STAFF_TOKEN>
+
+### 13. Cancelar una orden
+PATCH http://localhost:8081/api/staff/orders/1/cancel
+Authorization: Bearer <STAFF_TOKEN>
+
+---
+
+### === ÓRDENES - DELIVERY ===
+
+### 14. Crear orden de delivery
+POST http://localhost:8081/api/orders/delivery
+Content-Type: application/json
+
+{
+  "address": "Calle 5 #10-20, Apt 502",
+  "phoneNumber": "3001234567",
+  "clientName": "Juan Pérez",
+  "deliveryTime": 30,
+  "items": [
+    {
+      "itemId": 15,
+      "quantity": 2
+    },
+    {
+      "itemId": 19,
+      "quantity": 3
+    }
+  ]
+}
+
+---
+
+### === MESAS ===
+
+### 15. Listar todas las mesas
+GET http://localhost:8081/api/staff/tables
+Authorization: Bearer <STAFF_TOKEN>
+
+### 16. Ver mesa específica
+GET http://localhost:8081/api/staff/tables/5
+Authorization: Bearer <STAFF_TOKEN>
+
+### 17. Crear nueva mesa
+POST http://localhost:8081/api/staff/tables?tableNumber=6&capacity=4&location=Sector_A
+Authorization: Bearer <ADMIN_TOKEN>
+
+### 18. Cambiar estado de mesa
+PATCH http://localhost:8081/api/staff/tables/5/status?status=AVAILABLE
+Authorization: Bearer <ADMIN_TOKEN>
+
+### 19. Ver estado de mesa (si está activa)
+GET http://localhost:8081/api/staff/tables/5/session/status
+Authorization: Bearer <STAFF_TOKEN>
+
+### 20. Cerrar sesión de mesa (cuando se va el cliente)
+DELETE http://localhost:8081/api/staff/tables/5/session
+Authorization: Bearer <STAFF_TOKEN>
+
+### 21. Eliminar mesa
+DELETE http://localhost:8081/api/staff/tables/5
+Authorization: Bearer <ADMIN_TOKEN>
+
+---
+
+### === MENÚ (Items) ===
+
+### 22. Listar platos disponibles (paginado)
+GET http://localhost:8081/api/items/paginated?page=0&size=10&sort=id,asc
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+### 23. Listar platos por categoría
+GET http://localhost:8081/api/items/category-paginated/1?page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+### 24. Ver detalles de un plato
+GET http://localhost:8081/api/items/15
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+---
+
+### === FLUJO COMPLETO EJEMPLO ===
+
+# Paso 1: Cliente escanea QR y abre sesión
+GET http://localhost:8081/api/client/session?table=5
+
+# Respuesta:
+# {
+#   "sessionToken": "eyJhbGciOiJIUzUxMiJ9...",
+#   "tableNumber": 5,
+#   "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+#   "expiresAt": "2026-04-02T18:30:00",
+#   "tokenType": "Bearer"
+# }
+
+# Paso 2: Guardar token en localStorage (frontend)
+# localStorage.setItem('sessionToken', 'eyJhbGciOiJIUzUxMiJ9...')
+
+# Paso 3: Cliente ve menú
+GET http://localhost:8081/api/items/paginated?page=0&size=20
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+# Paso 4: Cliente crea orden
+POST http://localhost:8081/api/client/orders
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+{
+  "tableNumber": 5,
+  "items": [
+    { "itemId": 15, "quantity": 2 },
+    { "itemId": 18, "quantity": 1 }
+  ]
+}
+
+# Respuesta:
+# {
+#   "id": 42,
+#   "table_number": 5,
+#   "items": [
+#     {
+#       "id": 1,
+#       "item_id": 15,
+#       "item_name": "Arroz con Pollo",
+#       "quantity": 2,
+#       "unit_price": 15000.00,
+#       "tax_percent": 8.00,
+#       "subtotal": 32400.00
+#     },
+#     ...
+#   ],
+#   "status": "PENDING",
+#   "total": 48600.00,
+#   "created_at": "2026-04-02T14:15:30",
+#   "order_type": "TABLE"
+# }
+
+# Paso 5: Cocina ve orden pendiente
+GET http://localhost:8081/api/staff/orders/pending
+Authorization: Bearer <COCINA_TOKEN>
+
+# Paso 6: Cocina inicia preparación
+PATCH http://localhost:8081/api/staff/orders/42/status
+Content-Type: application/json
+Authorization: Bearer <COCINA_TOKEN>
+
+{
+  "status": "IN_PREPARATION",
+  "notes": "Iniciando preparación"
+}
+
+# Paso 7: Cocina termina y marca como listo
+PATCH http://localhost:8081/api/staff/orders/42/status
+Content-Type: application/json
+Authorization: Bearer <COCINA_TOKEN>
+
+{
+  "status": "SERVED",
+  "notes": "Listo para servir"
+}
+
+# Paso 8: Cliente ve que su orden está lista (UI actualiza automáticamente)
+GET http://localhost:8081/api/client/orders/42
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+
+# Paso 9: Mesero genera factura para cobrar
+GET http://localhost:8081/api/staff/orders/42/invoice
+Authorization: Bearer <MESERO_TOKEN>
+
+# Paso 10: Cliente se va y mesero cierra sesión
+DELETE http://localhost:8081/api/staff/tables/5/session
+Authorization: Bearer <MESERO_TOKEN>
+
+---
+
+### NOTAS DE TESTING:
+- Reemplazar "localhost:8081" con tu IP/host real
+- Reemplazar tokens Bearer con tokens reales obtenidos del login
+- ItemId: usar IDs reales de tu BD
+- TableNumber: debe ser una mesa existente
+- Verificar roles: CLIENTE, COCINA, MESERO, CASHIER, ADMIN
+

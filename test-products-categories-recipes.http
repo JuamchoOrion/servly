@@ -1,0 +1,158 @@
+### Variables
+@baseUrl = http://localhost:8081/api/admin
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTE2Nzg0NywiZXhwIjoxNzc1MjU0MjQ3fQ.Sd6_ZqHfJgR7h7LHK-AJktvm_NXXx59z2aJIl1Z4LFZ_b-ho3V2JkpC4CvEaxESkBzMsdYYR3pMuvT4VypcYRw
+
+### 1. Crear categoría de producto
+POST {{baseUrl}}/product-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Bebidas",
+  "description": "Categoría de bebidas",
+  "active": true
+}
+
+### 2. Listar categorías de productos
+GET {{baseUrl}}/product-categories
+Authorization: Bearer {{token}}
+
+### 3. Listar categorías activas
+GET {{baseUrl}}/product-categories/active
+Authorization: Bearer {{token}}
+
+### 4. Obtener categoría por ID
+GET {{baseUrl}}/product-categories/1
+Authorization: Bearer {{token}}
+
+### 5. Actualizar categoría
+PUT {{baseUrl}}/product-categories/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Bebidas Premium",
+  "description": "Categoría de bebidas premium",
+  "active": true
+}
+
+### 6. Crear receta
+POST {{baseUrl}}/recipes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Jugo Naranja",
+  "description": "Jugo de naranja fresco",
+  "itemDetails": [
+    {
+      "itemId": 2,
+      "quantity": 300,
+      "isOptional": false,
+      "defaultQuantity": 300,
+      "maxQuantity": 400,
+      "minQuantity": 200
+    }
+  ]
+}
+
+### 7. Listar recetas
+GET {{baseUrl}}/recipes
+Authorization: Bearer {{token}}
+
+### 8. Obtener receta por ID
+GET {{baseUrl}}/recipes/1
+Authorization: Bearer {{token}}
+
+### 9. Crear producto
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Jugo Naranja Premium",
+  "description": "Bebida refrescante de naranja",
+  "price": 5.99,
+  "productCategoryId": 1,
+  "active": true,
+  "recipeId": 1
+}
+
+### 10. Listar productos
+GET {{baseUrl}}/products?page=0&size=10
+Authorization: Bearer {{token}}
+
+### 11. Listar productos activos
+GET {{baseUrl}}/products/active?page=0&size=10
+Authorization: Bearer {{token}}
+
+### 12. Obtener producto por ID
+GET {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+
+### 13. Actualizar producto
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Jugo Naranja Premium Plus",
+  "description": "Bebida refrescante de naranja mejorada",
+  "price": 6.99,
+  "active": true
+}
+
+### 14. Activar producto
+PATCH {{baseUrl}}/products/1/activate
+Authorization: Bearer {{token}}
+
+### 15. Desactivar producto
+PATCH {{baseUrl}}/products/1/deactivate
+Authorization: Bearer {{token}}
+
+### 16. Eliminar producto
+DELETE {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+
+### 17. Eliminar categoría
+DELETE {{baseUrl}}/product-categories/1
+Authorization: Bearer {{token}}
+
+### 18. Agregar ItemDetail a receta
+POST {{baseUrl}}/recipes/1/items
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "itemId": 3,
+  "quantity": 200,
+  "isOptional": true,
+  "defaultQuantity": 200,
+  "maxQuantity": 300,
+  "minQuantity": 100
+}
+
+### 19. Eliminar ItemDetail de receta
+DELETE {{baseUrl}}/recipes/1/items/1
+Authorization: Bearer {{token}}
+
+### 20. Actualizar receta
+PUT {{baseUrl}}/recipes/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Jugo Naranja Actualizado",
+  "description": "Jugo de naranja con más vitaminas",
+  "itemDetails": [
+    {
+      "itemId": 2,
+      "quantity": 350,
+      "isOptional": false,
+      "defaultQuantity": 350,
+      "maxQuantity": 450,
+      "minQuantity": 250
+    }
+  ]
+}
+

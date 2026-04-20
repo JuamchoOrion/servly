@@ -1,0 +1,275 @@
+### Variables
+@host = http://localhost:8081
+@baseUrl = http://localhost:8081
+@tableNumber = 10
+@productId1 = 1
+@productId2 = 2
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTI2MzMwOSwiZXhwIjoxNzc1MzQ5NzA5fQ.WIWMiF1m3nylVKoo_Ollgt4Nznx1XxftcyGSNOnQwtIbBHV0hjhXNg9y0sTCJz4OxO_LCGWF2T0J7mpkq41fsQ
+
+### ============================================
+### FLUJO COMPLETO: CLIENTE ORDENA Y PAGA
+### Estado: PENDING → IN_PREPARATION → SERVED → PAID
+### ============================================
+
+### 1. CLIENTE: Abrir sesión de mesa (Escanear QR)
+### Respuesta: Sesión creada + sessionToken en cookie
+GET {{host}}/api/client/session?table={{tableNumber}}
+
+### 2. CLIENTE: Obtener menú disponible
+### Respuesta: Lista de productos con variantes
+GET {{host}}/api/menu/products?page=0&size=20
+
+### 3. CLIENTE: Crear orden (Estado inicial: PENDING)
+### Respuesta: Orden creada con ID para tracking
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": 1,
+      "quantity": 2,
+      "variantId": 101
+    },
+    {
+      "productId": 2,
+      "quantity": 1,
+      "variantId": 201
+    }
+  ]
+}
+
+### Guardar el orderId de la respuesta (ejemplo: "id": 5)
+### Copiar el ID para los siguientes pasos
+
+### 4. CLIENTE: Ver estado de mi orden (aún PENDING)
+GET {{host}}/api/client/orders/5
+
+### 5. CLIENTE: Ver todas mis órdenes de la mesa
+GET {{host}}/api/client/orders
+
+
+### ============================================
+### FLUJO ADMIN/STAFF: PREPARACIÓN Y PAGO
+### ============================================
+
+### 6. ADMIN: Ver órdenes pendientes (todas en espera de preparación)
+GET {{host}}/api/staff/orders/pending
+Authorization: Bearer {{adminToken}}
+
+### 7. ADMIN: Cambiar estado a IN_PREPARATION (PATCH)
+### Nota: Usar PATCH, no PUT o POST
+PATCH {{host}}/api/staff/orders/5/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### 8. ADMIN: Ver orden en preparación
+GET {{host}}/api/staff/orders/5
+Authorization: Bearer {{adminToken}}
+
+### 9. ADMIN: Cambiar estado a SERVED (comida lista)
+### Nota: Esto DESCUENTA inventario automáticamente
+PATCH {{host}}/api/staff/orders/5/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "SERVED"
+}
+
+### 10. CLIENTE: Ver orden después de servida (SERVED)
+GET {{host}}/api/client/orders/5
+
+### 11. ADMIN: Confirmar pago (FINAL STATE: PAID)
+### Nota: Solo se puede hacer si estado es SERVED
+### IMPORTANTE: Este endpoint cambia automáticamente el estado a PAID
+POST {{host}}/api/staff/orders/5/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+### 12. VERIFICAR: Estado final es PAID
+GET {{host}}/api/staff/orders/5
+Authorization: Bearer {{adminToken}}
+
+### 13. CLIENTE: Verificar que orden está PAID
+GET {{host}}/api/client/orders/5
+
+### ============================================
+### FLUJO ADICIONAL: MÚLTIPLES PRODUCTOS
+### ============================================
+
+### 14. CLIENTE: Crear orden con varios productos
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": 1,
+      "quantity": 2,
+      "variantId": 101
+    },
+    {
+      "productId": 2,
+      "quantity": 1,
+      "variantId": 201
+    }
+  ]
+}
+
+### Guardar el nuevo orderId de la respuesta (ej: 6)
+
+### 15. ADMIN: Ver órdenes de mesa específica
+GET {{host}}/api/staff/tables/{{tableNumber}}/orders
+Authorization: Bearer {{adminToken}}
+
+### 16. ADMIN: Procesar orden (IN_PREPARATION)
+PATCH {{host}}/api/staff/orders/6/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### Esperar un poco (simula tiempo de cocina)...
+
+### 17. ADMIN: Marcar como servida (SERVED)
+PATCH {{host}}/api/staff/orders/6/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "SERVED"
+}
+
+### 18. ADMIN: Generar factura para orden con múltiples items
+GET {{host}}/api/staff/orders/6/invoice
+Authorization: Bearer {{adminToken}}
+
+### 19. ADMIN: Confirmar pago (PAID automático)
+POST {{host}}/api/staff/orders/6/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### FLUJO CANCELACIÓN
+### ============================================
+
+### 20. CLIENTE: Crear orden de prueba para cancelar
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ]
+}
+
+### Guardar orderId (ej: 7)
+
+### 21. ADMIN: Cancelar orden (puede desde PENDING)
+PATCH {{host}}/api/staff/orders/7/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "CANCELLED"
+}
+
+### 22. VERIFICAR: Estado es CANCELLED
+GET {{host}}/api/staff/orders/7
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### VALIDACIONES DE MÁQUINA DE ESTADOS
+### ============================================
+
+### ⚠️ INTENTO INVÁLIDO: Cambiar de PENDING a SERVED (falta IN_PREPARATION)
+### Resultado esperado: ❌ Error 400 - "De PENDING solo se puede ir a IN_PREPARATION"
+PATCH {{host}}/api/staff/orders/8/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "SERVED"
+}
+
+### ⚠️ INTENTO INVÁLIDO: Cambiar de SERVED a IN_PREPARATION (hacia atrás)
+### Resultado esperado: ❌ Error 400 - "De SERVED solo se puede ir a PAID"
+PATCH {{host}}/api/staff/orders/5/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### ⚠️ INTENTO INVÁLIDO: Confirmar pago cuando status es PENDING
+### Resultado esperado: ❌ Error 400 - "La orden debe estar en estado SERVED"
+POST {{host}}/api/staff/orders/8/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### FLUJO CORRECTO DE ESTADOS
+### ============================================
+
+###
+### MÁQUINA DE ESTADOS: PENDING → IN_PREPARATION → SERVED → PAID
+###
+### Transiciones válidas:
+### ✅ PENDING → IN_PREPARATION (cambiar a "en preparación")
+### ✅ IN_PREPARATION → SERVED (comida lista, descuenta inventario)
+### ✅ SERVED → PAID (confirmar pago)
+### ✅ Cualquier estado → CANCELLED (cancelación)
+###
+### Transiciones inválidas (darán error):
+### ❌ PENDING → SERVED (salta una etapa)
+### ❌ PENDING → PAID
+### ❌ IN_PREPARATION → PENDING (hacia atrás)
+### ❌ SERVED → IN_PREPARATION (hacia atrás)
+###
+### ✅ Cualquier estado → CANCELLED
+###
+### ❌ Cualquier otra transición rechazada
+
+### ============================================
+### NOTAS IMPORTANTES
+### ============================================
+
+### 1. sessionToken (Cliente):
+###    - Se envía automáticamente en cookies
+###    - Válido por 4 horas
+###    - Se obtiene de: GET /api/client/session?table={numero}
+
+### 2. adminToken (Admin/Staff):
+###    - Se envía en header Authorization: Bearer {token}
+###    - Válido por 24 horas
+###    - Necesario para endpoints de /api/staff/...
+
+### 3. confirm-payment:
+###    - Cambia estado a PAID automáticamente
+###    - Solo funciona si estado es SERVED
+###    - No se puede ejecutar dos veces
+###    - Incluye validación de transición de estado
+
+### 4. Máquina de estados:
+###    - Solo hay transiciones hacia adelante
+###    - Cancelación es la excepción (desde cualquier estado)
+###    - Validaciones en OrderService
+
+### ============================================
+### CÓMO USAR ESTE ARCHIVO
+### ============================================
+
+### 1. Abre este archivo en un cliente HTTP (ej: REST Client, Postman, etc)
+### 2. Reemplaza los valores de @host, @tableNumber, @adminToken según tu entorno
+### 3. Ejecuta los endpoints en orden (1 → 2 → 3, etc)
+### 4. Guarda valores de respuesta para usar en siguientes requests
+### 5. Observa cómo cambian los estados de las órdenes
+

@@ -51,15 +51,36 @@ public class RestaurantTableService {
     }
 
     public RestaurantTable getTableByNumber(Integer tableNumber) {
-        return tableRepository.findByTableNumber(tableNumber)
-                .orElseThrow(() -> new AuthException("Mesa número " + tableNumber + " no existe"));
+        log.debug("Buscando mesa número: {}", tableNumber);
+        RestaurantTable table = tableRepository.findByTableNumber(tableNumber)
+                .orElseThrow(() -> {
+                    log.error("❌ Mesa número {} no encontrada", tableNumber);
+                    return new AuthException("Mesa número " + tableNumber + " no existe");
+                });
+        log.debug("✓ Mesa encontrada: ID={}, Status={}", table.getId(), table.getStatus());
+        return table;
     }
 
     public RestaurantTable updateTableStatus(Integer tableNumber, RestaurantTable.TableStatus newStatus) {
+        log.info("════════════════════════════════════════════════════════════════");
+        log.info("📍 ACTUALIZANDO ESTADO DE MESA");
+        log.info("════════════════════════════════════════════════════════════════");
+        log.info("Mesa: {}", tableNumber);
+
         RestaurantTable table = getTableByNumber(tableNumber);
+
+        log.info("Estado anterior: {}", table.getStatus());
+        log.info("Nuevo estado: {}", newStatus);
+
         table.setStatus(newStatus);
         tableRepository.save(table);
-        log.info("Estado de mesa {} actualizado a {}", tableNumber, newStatus);
+
+        log.info("════════════════════════════════════════════════════════════════");
+        log.info("✅ ESTADO ACTUALIZADO EXITOSAMENTE");
+        log.info("  - Mesa: {}", tableNumber);
+        log.info("  - Nuevo estado: {}", newStatus);
+        log.info("════════════════════════════════════════════════════════════════");
+
         return table;
     }
 

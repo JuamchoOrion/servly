@@ -2,7 +2,6 @@ package co.edu.uniquindio.servly.handlers;
 
 import co.edu.uniquindio.servly.DTO.MessageResponse;
 import co.edu.uniquindio.servly.exception.*;
-import co.edu.uniquindio.servly.exception.ConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -131,6 +130,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new MessageResponse(ex.getMessage()));
     }
 
+    @ExceptionHandler(TableOccupiedException.class)
+    public ResponseEntity<MessageResponse> handleTableOccupied(
+            TableOccupiedException ex, HttpServletRequest request) {
+        log.warn("TableOccupiedException en {}: Mesa {}, Estado {}", request.getRequestURI(), ex.getTableNumber(), ex.getStatus());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
     // ── Validaciones ──────────────────────────────────────────────────────────
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -157,8 +164,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MessageResponse> handleGenericException(
             Exception ex, HttpServletRequest request) {
-        log.error("Error inesperado en {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.error(" Error inesperado en {}: {}", request.getRequestURI(), ex.getMessage());
+        log.error("Detalles del error: ", ex);
         return ResponseEntity.internalServerError()
-                .body(new MessageResponse("Error interno del servidor"));
+                .body(new MessageResponse("Error interno del servidor: " + ex.getClass().getSimpleName()));
     }
 }

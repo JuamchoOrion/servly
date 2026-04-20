@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class RestaurantTableDTO {
 
-    private String id;
+    private Integer id;
 
     @JsonProperty("table_number")
     private Integer tableNumber;

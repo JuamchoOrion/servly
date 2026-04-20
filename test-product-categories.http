@@ -1,0 +1,165 @@
+### Variables
+@baseUrl = http://localhost:8081
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTk0NjMxNCwiZXhwIjoxNzc2MDMyNzE0fQ.LndXwTsjHaToH7hicPjcFzZiwaGqztCvKVAediYUfrl7ppe--EOH_8PIHkTEgfN3I1IRLus56OWOS3BKHeZmLA
+@contentType = application/json
+
+### 1. CREAR CATEGORÍA DE PRODUCTO
+POST {{baseUrl}}/api/admin/product-categories
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Bebidas",
+  "description": "Categoría de bebidas y refrescos",
+  "active": true
+}
+
+> {%
+  client.assert(response.status === 201, "Debe retornar 201 Created");
+  client.global.set("categoryId", response.body.id);
+%}
+
+### 2. CREAR OTRA CATEGORÍA
+POST {{baseUrl}}/api/admin/product-categories
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Postres",
+  "description": "Categoría de postres y dulces",
+  "active": true
+}
+
+### 3. LISTAR TODAS LAS CATEGORÍAS
+GET {{baseUrl}}/api/admin/product-categories
+Authorization: Bearer {{adminToken}}
+
+> {%
+  client.assert(response.status === 200, "Debe retornar 200 OK");
+  client.assert(response.body.length > 0, "Debe haber al menos una categoría");
+%}
+
+### 4. LISTAR CATEGORÍAS ACTIVAS
+GET {{baseUrl}}/api/admin/product-categories/active
+Authorization: Bearer {{adminToken}}
+
+> {%
+  client.assert(response.status === 200, "Debe retornar 200 OK");
+%}
+
+### 5. OBTENER CATEGORÍA POR ID
+GET {{baseUrl}}/api/admin/product-categories/1
+Authorization: Bearer {{adminToken}}
+
+> {%
+  client.assert(response.status === 200, "Debe retornar 200 OK");
+  client.log("Categoría obtenida: " + JSON.stringify(response.body, null, 2));
+%}
+
+### 6. ACTUALIZAR CATEGORÍA
+PUT {{baseUrl}}/api/admin/product-categories/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Bebidas Frías",
+  "description": "Bebidas refrescantes y frías",
+  "active": true
+}
+
+> {%
+  client.assert(response.status === 200, "Debe retornar 200 OK");
+%}
+
+### 7. ELIMINAR CATEGORÍA
+DELETE {{baseUrl}}/api/admin/product-categories/2
+Authorization: Bearer {{adminToken}}
+
+> {%
+  client.assert(response.status === 200, "Debe retornar 200 OK");
+%}
+
+### ============ EJEMPLOS DE RESPUESTAS ============
+
+### CREAR CATEGORÍA - Respuesta 201
+{
+  "id": 1,
+  "name": "Bebidas",
+  "description": "Categoría de bebidas y refrescos",
+  "active": true,
+  "createdAt": "2026-04-11T14:30:00",
+  "updatedAt": "2026-04-11T14:30:00"
+}
+
+### LISTAR CATEGORÍAS - Respuesta 200
+[
+  {
+    "id": 1,
+    "name": "Bebidas",
+    "description": "Categoría de bebidas y refrescos",
+    "active": true,
+    "createdAt": "2026-04-11T14:30:00",
+    "updatedAt": "2026-04-11T14:30:00"
+  },
+  {
+    "id": 2,
+    "name": "Postres",
+    "description": "Categoría de postres y dulces",
+    "active": true,
+    "createdAt": "2026-04-11T14:32:00",
+    "updatedAt": "2026-04-11T14:32:00"
+  }
+]
+
+### OBTENER CATEGORÍA POR ID - Respuesta 200
+{
+  "id": 1,
+  "name": "Bebidas",
+  "description": "Categoría de bebidas y refrescos",
+  "active": true,
+  "createdAt": "2026-04-11T14:30:00",
+  "updatedAt": "2026-04-11T14:30:00"
+}
+
+### ACTUALIZAR CATEGORÍA - Respuesta 200
+{
+  "id": 1,
+  "name": "Bebidas Frías",
+  "description": "Bebidas refrescantes y frías",
+  "active": true,
+  "createdAt": "2026-04-11T14:30:00",
+  "updatedAt": "2026-04-11T14:35:00"
+}
+
+### ELIMINAR CATEGORÍA - Respuesta 200
+{
+  "message": "Categoría de producto eliminada correctamente"
+}
+
+### ERROR - Categoría no encontrada - 404
+{
+  "timestamp": "2026-04-11T14:40:00",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Categoría con ID 999 no encontrada",
+  "path": "/api/admin/product-categories/999"
+}
+
+### ERROR - No autorizado - 401
+{
+  "timestamp": "2026-04-11T14:42:00",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Full authentication is required to access this resource",
+  "path": "/api/admin/product-categories"
+}
+
+### ERROR - Sin permisos - 403
+{
+  "timestamp": "2026-04-11T14:45:00",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Access denied. Only ADMIN users can create categories",
+  "path": "/api/admin/product-categories"
+}
+

@@ -127,6 +127,10 @@ public class SecurityConfig {
                                 "/api/auth/refresh-token",
                                 "/api/auth/logout",
                                 "/api/client/session",       // Escaneo QR
+                                "/api/products/active",      // Menú digital para clientes
+                                "/api/menu/products",        // Menú con paginación
+                                "/api/menu/categories",      // Categorías de productos
+                                "/api/products/**",          // Detalles de productos
                                 "/oauth2/**",
                                 "/login/oauth2/**"
                         ).permitAll()
@@ -161,9 +165,9 @@ public class SecurityConfig {
                         )
                 )
                 .authenticationProvider(authenticationProvider())
-                // TableSessionFilter primero (rutas de cliente), luego JWT (rutas de staff)
-                .addFilterBefore(tableSessionFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, TableSessionFilter.class)
+                // JWT primero (rutas de staff), luego TableSessionFilter (rutas de cliente)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(tableSessionFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 

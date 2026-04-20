@@ -1,0 +1,396 @@
+### PRUEBAS HTTP COMPLETAS - APIs de PRODUCTOS (Admin)
+### Archivo de pruebas para todos los endpoints de productos
+
+@base = http://localhost:8081
+@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NjYzNDIxMiwiZXhwIjoxNzc2NzIwNjEyfQ.zEyEGFBgzDEdFKGNA59Aae82JgyXRSo9W4ls0-XbChcfDhA7EvUaXcK5DqmqfVOsiwmI8Hf1C-B1Afcdp5zaqw
+
+### ================================
+### CRUD PRODUCTOS - CREAR
+### ================================
+
+### 1. Crear un nuevo producto
+POST {{base}}/api/admin/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Hamburguesa Clásica",
+  "description": "Hamburguesa de carne con queso, tomate y lechuga",
+  "price": 25000,
+  "categoryId": 1,
+  "recipeId": 5,
+  "active": true
+}
+
+### ================================
+### CRUD PRODUCTOS - LEER
+### ================================
+
+### 2. Obtener todos los productos (paginado)
+GET {{base}}/api/admin/products?page=0&size=10&sort=name,asc
+Authorization: Bearer {{token}}
+
+### 3. Obtener productos activos
+GET {{base}}/api/admin/products/active?page=0&size=10
+Authorization: Bearer {{token}}
+
+### 4. Obtener producto por ID
+GET {{base}}/api/admin/products/1
+Authorization: Bearer {{token}}
+
+### ================================
+### CRUD PRODUCTOS - ACTUALIZAR
+### ================================
+
+### 5. Actualizar un producto (con query params)
+PUT {{base}}/api/admin/products/1?name=Hamburguesa Premium&price=35000&description=Hamburguesa con ingredientes premium&active=true
+Authorization: Bearer {{token}}
+
+### ================================
+### CRUD PRODUCTOS - ACTIVAR/DESACTIVAR
+### ================================
+
+### 6. Activar un producto
+PATCH {{base}}/api/admin/products/1/activate
+Authorization: Bearer {{token}}
+
+### 7. Desactivar un producto
+PATCH {{base}}/api/admin/products/1/deactivate
+Authorization: Bearer {{token}}
+
+### ================================
+### CRUD PRODUCTOS - ELIMINAR
+### ================================
+
+### 8. Eliminar un producto (borrado lógico)
+DELETE {{base}}/api/admin/products/1
+Authorization: Bearer {{token}}
+
+### ================================
+### CRUD CATEGORÍAS - CREAR
+### ================================
+
+### 9. Crear una nueva categoría
+POST {{base}}/api/admin/product-categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Bebidas Calientes",
+  "description": "Café, té y otras bebidas calientes"
+}
+
+### ================================
+### CRUD CATEGORÍAS - LEER
+### ================================
+
+### 10. Obtener todas las categorías
+GET {{base}}/api/admin/product-categories
+Authorization: Bearer {{token}}
+
+### 11. Obtener categorías activas
+GET {{base}}/api/admin/product-categories/active
+Authorization: Bearer {{token}}
+
+### 12. Obtener categoría por ID
+GET {{base}}/api/admin/product-categories/1
+Authorization: Bearer {{token}}
+
+### ================================
+### CRUD CATEGORÍAS - ACTUALIZAR
+### ================================
+
+### 13. Actualizar una categoría
+PUT {{base}}/api/admin/product-categories/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Comidas Principales Actualizadas",
+  "description": "Nuevos platos principales del menú"
+}
+
+### ================================
+### CRUD CATEGORÍAS - ELIMINAR
+### ================================
+
+### 14. Eliminar una categoría
+DELETE {{base}}/api/admin/product-categories/1
+Authorization: Bearer {{token}}
+
+### ================================
+### FLUJO COMPLETO - Crear menú desde cero
+### ================================
+
+### Paso 1: Crear categoría "Comidas Principales"
+POST {{base}}/api/admin/product-categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Comidas Principales",
+  "description": "Platos fuertes y principales"
+}
+
+###
+
+### Paso 2: Crear categoría "Bebidas"
+POST {{base}}/api/admin/product-categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Bebidas",
+  "description": "Bebidas frías y calientes"
+}
+
+###
+
+### Paso 3: Crear categoría "Postres"
+POST {{base}}/api/admin/product-categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Postres",
+  "description": "Postres y dulces varios"
+}
+
+###
+
+### Paso 4: Obtener todas las categorías creadas
+GET {{base}}/api/admin/product-categories
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 5: Crear primer producto - Café Americano (requiere categoryId=1)
+POST {{base}}/api/admin/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Café Americano",
+  "description": "Café negro simple y fuerte",
+  "price": 5000,
+  "categoryId": 2,
+  "recipeId": 1,
+  "active": true
+}
+
+###
+
+### Paso 6: Crear segundo producto - Hamburguesa (requiere categoryId=1)
+POST {{base}}/api/admin/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Hamburguesa Clásica",
+  "description": "Hamburguesa de carne con queso, tomate y lechuga",
+  "price": 25000,
+  "categoryId": 1,
+  "recipeId": 5,
+  "active": true
+}
+
+###
+
+### Paso 7: Crear tercer producto - Flan (requiere categoryId=3)
+POST {{base}}/api/admin/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Flan de Caramelo",
+  "description": "Postre tradicional de flan con caramelo",
+  "price": 8000,
+  "categoryId": 3,
+  "recipeId": 2,
+  "active": true
+}
+
+###
+
+### Paso 8: Obtener todos los productos creados
+GET {{base}}/api/admin/products?page=0&size=10
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 9: Obtener solo productos activos
+GET {{base}}/api/admin/products/active
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 10: Obtener detalles de un producto específico
+GET {{base}}/api/admin/products/1
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 11: Actualizar precio de un producto
+PUT {{base}}/api/admin/products/2?price=28000
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 12: Desactivar un producto
+PATCH {{base}}/api/admin/products/3/deactivate
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 13: Verificar que está desactivado
+GET {{base}}/api/admin/products/3
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 14: Reactivar el producto
+PATCH {{base}}/api/admin/products/3/activate
+Authorization: Bearer {{token}}
+
+###
+
+### Paso 15: Listar productos activos nuevamente
+GET {{base}}/api/admin/products/active
+Authorization: Bearer {{token}}
+
+### ================================
+### CASOS DE ERROR
+### ================================
+
+### Error 1: Crear producto sin categoría (debe fallar)
+POST {{base}}/api/admin/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Producto sin categoría",
+  "description": "Este fallará",
+  "price": 1000,
+  "categoryId": 999,
+  "recipeId": 1,
+  "active": true
+}
+
+###
+
+### Error 2: Crear producto con precio negativo (debe fallar)
+POST {{base}}/api/admin/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Producto precio negativo",
+  "description": "Este fallará",
+  "price": -5000,
+  "categoryId": 1,
+  "recipeId": 31,
+  "active": true
+}
+
+###
+
+### Error 3: Obtener producto que no existe
+GET {{base}}/api/admin/products/99999
+Authorization: Bearer {{token}}
+
+###
+
+### Error 4: Usar token inválido
+GET {{base}}/api/admin/products
+Authorization: Bearer token_invalido_aqui
+
+###
+
+### Error 5: Intentar acceder sin token
+GET {{base}}/api/admin/products
+
+### ================================
+### CASOS DE PAGINACIÓN
+### ================================
+
+### Página 1 (primeros 10 resultados)
+GET {{base}}/api/admin/products?page=0&size=10
+Authorization: Bearer {{token}}
+
+###
+
+### Página 2 (siguientes 10 resultados)
+GET {{base}}/api/admin/products?page=1&size=10
+Authorization: Bearer {{token}}
+
+###
+
+### Mostrar 5 productos por página
+GET {{base}}/api/admin/products?page=0&size=5
+Authorization: Bearer {{token}}
+
+###
+
+### Mostrar 20 productos por página
+GET {{base}}/api/admin/products?page=0&size=20
+Authorization: Bearer {{token}}
+
+###
+
+### Ordenar por nombre (ascendente)
+GET {{base}}/api/admin/products?page=0&size=10&sort=name,asc
+Authorization: Bearer {{token}}
+
+###
+
+### Ordenar por nombre (descendente)
+GET {{base}}/api/admin/products?page=0&size=10&sort=name,desc
+Authorization: Bearer {{token}}
+
+###
+
+### Ordenar por precio (ascendente)
+GET {{base}}/api/admin/products?page=0&size=10&sort=price,asc
+Authorization: Bearer {{token}}
+
+###
+
+### Ordenar por precio (descendente)
+GET {{base}}/api/admin/products?page=0&size=10&sort=price,desc
+Authorization: Bearer {{token}}
+
+### ================================
+### NOTAS IMPORTANTES
+### ================================
+
+###
+### CONFIGURACIÓN:
+### 1. Reemplaza {{token}} con tu token JWT válido
+### 2. Reemplaza {{base}} si el servidor está en otro puerto
+### 3. Asegúrate de que categoryId y recipeId existan antes de crear productos
+### 4. Los IDs en las pruebas (1, 2, 3) son ejemplos, ajusta según tu BD
+
+###
+### ORDEN RECOMENDADO DE EJECUCIÓN:
+### 1. Ejecutar "Paso 1" a "Paso 15" en orden para crear un flujo completo
+### 2. Luego ejecutar pruebas individuales según sea necesario
+### 3. Para debugging: ejecutar "Paso 4" para ver todas las categorías
+### 4. Para debugging: ejecutar "Paso 8" para ver todos los productos
+
+###
+### CÓDIGOS DE RESPUESTA ESPERADOS:
+### - 201 Created: Cuando se crea un recurso (POST)
+### - 200 OK: Cuando se lee o actualiza un recurso (GET, PUT, PATCH)
+### - 400 Bad Request: Datos inválidos
+### - 401 Unauthorized: Token inválido o expirado
+### - 403 Forbidden: No tienes permisos (ej: STAFF intentando crear)
+### - 404 Not Found: Recurso no existe
+### - 500 Internal Server Error: Error del servidor
+
+###
+### ÚTILES:
+### - Todos los endpoints requieren Bearer token
+### - Los IDs de categoría deben existir antes de crear productos
+### - El borrado es LÓGICO (soft delete), no elimina de la BD
+### - Para activar/desactivar usa PATCH, no PUT
+

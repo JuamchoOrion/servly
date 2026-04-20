@@ -1,289 +1,247 @@
 ### Variables
+@host = http://localhost:8081
 @baseUrl = http://localhost:8081
-@token = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjEsInN1YiI6InJhbWlyZXNqdWFuZGE0N0BnbWFpbC5jb20iLCJpYXQiOjE3NzI5MjQ5MDgsImV4cCI6MTc3MzAxMTMwOH0.lhipzNrn20fkMTJs1uZiKNusVhD-4m1EQBzZJ37dlgoHvo8SaCR4mbAxly3wdSXLRKPren6iGDIWcQumNPHawQ
-@categoryId = 1
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTI2MzMwOSwiZXhwIjoxNzc1MzQ5NzA5fQ.WIWMiF1m3nylVKoo_Ollgt4Nznx1XxftcyGSNOnQwtIbBHV0hjhXNg9y0sTCJz4OxO_LCGWF2T0J7mpkq41fsQ
 
-### SOFT DELETE IMPLEMENTADO
-### Las categorías eliminadas se marcan como deleted=true pero se conservan en la BD
-### Solo se retornan categorías con deleted=false en las consultas GET
+### ============================================
+### GESTIÓN DE CATEGORÍAS DE ITEMS
+### ============================================
 
-###
-### 1. CREAR CATEGORÍA - ALIMENTOS
-###
-POST {{baseUrl}}/api/item-categories
+### 1. CREAR una nueva categoría
+POST {{host}}/api/item-categories
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Alimentos",
-  "description": "Categoría para alimentos perecederos"
+  "name": "Alimentos Frescos",
+  "description": "Alimentos perecederos que requieren refrigeración"
 }
 
-###
-### 2. CREAR CATEGORÍA - LIMPIEZA
-###
-POST {{baseUrl}}/api/item-categories
+### 2. CREAR otra categoría
+POST {{host}}/api/item-categories
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Limpieza",
-  "description": "Productos de limpieza y desinfección"
+  "name": "Bebidas",
+  "description": "Bebidas frías y calientes"
 }
 
-###
-### 3. CREAR CATEGORÍA - OFICINA
-###
-POST {{baseUrl}}/api/item-categories
+### 3. CREAR una tercera categoría
+POST {{host}}/api/item-categories
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Oficina",
-  "description": "Artículos de oficina y papelería"
+  "name": "Postres",
+  "description": "Postres y dulces variados"
 }
 
-###
-### 4. CREAR CATEGORÍA - SIN DESCRIPCIÓN (OPCIONAL)
-###
-POST {{baseUrl}}/api/item-categories
+### 4. CREAR categoría de limpieza
+POST {{host}}/api/item-categories
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Bebidas"
+  "name": "Artículos de Limpieza",
+  "description": "Productos para limpieza general"
 }
 
-###
-### 5. INTENTAR CREAR CON NOMBRE DUPLICADO (DEBE FALLAR)
-###
-POST {{baseUrl}}/api/item-categories
+### ============================================
+### OBTENER CATEGORÍAS
+### ============================================
+
+### 5. OBTENER todas las categorías (sin paginación)
+### Respuesta: Array simple de todas las categorías
+GET {{host}}/api/item-categories
+
+### 6. OBTENER categorías CON PAGINACIÓN
+### Parámetros:
+### - page: Número de página (0-indexed)
+### - size: Cantidad de registros por página
+### - sort: Campo y dirección de ordenamiento
+GET {{host}}/api/item-categories/paginated?page=0&size=10&sort=id,asc
+
+### 7. OBTENER categorías ordenadas por nombre (ASC)
+GET {{host}}/api/item-categories/paginated?page=0&size=10&sort=name,asc
+
+### 8. OBTENER categorías ordenadas por nombre (DESC)
+GET {{host}}/api/item-categories/paginated?page=0&size=10&sort=name,desc
+
+### 9. OBTENER categoría específica por ID (guardar ID de respuesta anterior)
+### Reemplaza el {id} con un ID real
+GET {{host}}/api/item-categories/1
+
+### ============================================
+### ACTUALIZAR CATEGORÍAS
+### ============================================
+
+### 10. ACTUALIZAR nombre y descripción de una categoría
+### Reemplaza el {id} con un ID real
+PUT {{host}}/api/item-categories/1
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Alimentos",
-  "description": "Intento de crear duplicado"
+  "name": "Alimentos Frescos Premium",
+  "description": "Alimentos perecederos de alta calidad que requieren refrigeración"
 }
 
-###
-### 6. INTENTAR CREAR SIN TOKEN (DEBE FALLAR)
-###
-POST {{baseUrl}}/api/item-categories
+### 11. ACTUALIZAR otra categoría
+PUT {{host}}/api/item-categories/2
 Content-Type: application/json
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Sin Autenticación",
-  "description": "Esta petición debe fallar"
+  "name": "Bebidas Frías y Calientes",
+  "description": "Amplio surtido de bebidas: refrescos, jugos, café y té"
 }
 
-###
-### 7. INTENTAR CREAR CON NOMBRE VACÍO (DEBE FALLAR)
-###
-POST {{baseUrl}}/api/item-categories
+### ============================================
+### ACTIVAR/DESACTIVAR CATEGORÍAS
+### ============================================
+
+### 12. ACTIVAR/DESACTIVAR una categoría (toggle)
+### Si está activa, la desactiva. Si está inactiva, la activa.
+PATCH {{host}}/api/item-categories/1/toggle
+Authorization: Bearer {{adminToken}}
+
+### 13. VERIFICAR si cambió el estado active
+GET {{host}}/api/item-categories/1
+
+### 14. DESACTIVAR otra categoría
+PATCH {{host}}/api/item-categories/3/toggle
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### ELIMINAR CATEGORÍAS
+### ============================================
+
+### ⚠️ IMPORTANTE: Solo se pueden eliminar categorías que NO tengan items asociados
+
+### 15. INTENTAR ELIMINAR una categoría
+### Si tiene items asociados → Error 400
+### Si no tiene items → Eliminada correctamente (204 No Content)
+DELETE {{host}}/api/item-categories/4
+Authorization: Bearer {{adminToken}}
+
+### 16. VERIFICAR que fue eliminada
+### Debe retornar 404 Not Found
+GET {{host}}/api/item-categories/4
+
+### ============================================
+### FLUJO COMPLETO DE EJEMPLO
+### ============================================
+
+### A. CREAR una categoría nueva
+POST {{host}}/api/item-categories
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "",
-  "description": "Nombre vacío"
+  "name": "Ensaladas",
+  "description": "Ensaladas frescas y variadas"
 }
 
-###
-### 8. OBTENER TODAS LAS CATEGORÍAS
-###
-GET {{baseUrl}}/api/item-categories
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Guardar el ID de la respuesta (ej: 5)
 
-###
-### 9. OBTENER CATEGORÍA POR ID - ID 1
-###
-GET {{baseUrl}}/api/item-categories/6
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### B. OBTENER la categoría creada
+GET {{host}}/api/item-categories/5
 
-###
-### 10. OBTENER CATEGORÍA POR ID - ID 2
-###
-GET {{baseUrl}}/api/item-categories/2
+### C. ACTUALIZAR la categoría
+PUT {{host}}/api/item-categories/5
 Content-Type: application/json
-
-###
-### 11. OBTENER CATEGORÍA POR ID - ID 3
-###
-GET {{baseUrl}}/api/item-categories/6
-Content-Type: application/json
-
-###
-### 12. OBTENER CATEGORÍA POR ID INEXISTENTE (DEBE FALLAR)
-###
-GET {{baseUrl}}/api/item-categories/999
-Content-Type: application/json
-
-###
-### 13. ACTUALIZAR CATEGORÍA - ID 1
-###
-PUT {{baseUrl}}/api/item-categories/1
-Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 
 {
-  "name": "Alimentos Premium",
-  "description": "Categoría para alimentos perecederos de alta calidad"
+  "name": "Ensaladas Gourmet",
+  "description": "Ensaladas frescas, variadas y de alta calidad"
 }
 
-###
-### 14. ACTUALIZAR CATEGORÍA - ID 2
-###
-PUT {{baseUrl}}/api/item-categories/2
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### D. VERIFICAR cambios
+GET {{host}}/api/item-categories/5
 
-{
-  "name": "Limpieza Profunda",
-  "description": "Productos para limpieza profunda"
-}
+### E. DESACTIVAR la categoría (toggle)
+PATCH {{host}}/api/item-categories/5/toggle
+Authorization: Bearer {{adminToken}}
 
-###
-### 15. INTENTAR ACTUALIZAR CON NOMBRE QUE YA EXISTE (DEBE FALLAR)
-###
-PUT {{baseUrl}}/api/item-categories/1
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### F. VERIFICAR estado
+GET {{host}}/api/item-categories/5
 
-{
-  "name": "Limpieza Profunda",
-  "description": "Intento de cambiar a nombre existente"
-}
+### G. REACTIVAR la categoría (toggle nuevamente)
+PATCH {{host}}/api/item-categories/5/toggle
+Authorization: Bearer {{adminToken}}
 
-###
-### 16. INTENTAR ACTUALIZAR SIN TOKEN (DEBE FALLAR)
-###
-PUT {{baseUrl}}/api/item-categories/1
-Content-Type: application/json
+### H. ELIMINAR la categoría (si no tiene items)
+DELETE {{host}}/api/item-categories/5
+Authorization: Bearer {{adminToken}}
 
-{
-  "name": "Sin Token",
-  "description": "Esta petición debe fallar"
-}
+### I. VERIFICAR eliminación
+GET {{host}}/api/item-categories/5
 
-###
-### 17. INTENTAR ACTUALIZAR CATEGORÍA INEXISTENTE (DEBE FALLAR)
-###
-PUT {{baseUrl}}/api/item-categories/999
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### ============================================
+### NOTAS IMPORTANTES
+### ============================================
 
-{
-  "name": "No Existe",
-  "description": "Esta categoría no existe"
-}
+### 1. AUTENTICACIÓN:
+###    - POST, PUT, PATCH, DELETE requieren token de ADMIN o STOREKEEPER
+###    - GET (obtener) NO requiere autenticación
+###    - Token va en header: Authorization: Bearer {token}
 
-###
-### 18. TOGGLE (ACTIVAR/DESACTIVAR) - ID 1
-###
-PATCH {{baseUrl}}/api/item-categories/1/toggle
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### 2. PERMISOS:
+###    - ADMIN: Acceso completo
+###    - STOREKEEPER: Acceso completo
+###    - Otros roles: Sin acceso (403 Forbidden)
 
-###
-### 19. TOGGLE (ACTIVAR/DESACTIVAR) - ID 2
-###
-PATCH {{baseUrl}}/api/item-categories/2/toggle
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### 3. PAGINACIÓN:
+###    - GET /api/item-categories: Sin paginación (retorna lista)
+###    - GET /api/item-categories/paginated: Con paginación
+###    - Parámetros: page, size, sort
 
-###
-### 20. TOGGLE (ACTIVAR/DESACTIVAR) - ID 3
-###
-PATCH {{baseUrl}}/api/item-categories/3/toggle
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### 4. ELIMINACIÓN:
+###    - Solo se pueden eliminar categorías SIN items asociados
+###    - Si tiene items → Error 400: "No se puede eliminar categoría con items"
+###    - Si se elimina exitosamente → 204 No Content (sin body)
 
-###
-### 21. TOGGLE NUEVAMENTE - ID 1 (DEBE REACTIVARSE)
-###
-PATCH {{baseUrl}}/api/item-categories/1/toggle
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### 5. TOGGLE (Activar/Desactivar):
+###    - PATCH /api/item-categories/{id}/toggle
+###    - Cambia el estado active de true a false o viceversa
+###    - Retorna el objeto con el nuevo estado
 
-###
-### 22. INTENTAR TOGGLE SIN TOKEN (DEBE FALLAR)
-###
-PATCH {{baseUrl}}/api/item-categories/1/toggle
-Content-Type: application/json
+### 6. CÓDIGOS DE RESPUESTA:
+###    - 200 OK: Operación exitosa (GET, POST, PUT, PATCH)
+###    - 204 No Content: Eliminación exitosa
+###    - 400 Bad Request: Validación fallida
+###    - 403 Forbidden: Sin permisos
+###    - 404 Not Found: Recurso no existe
+###    - 500 Internal Server Error: Error del servidor
 
-###
-### 23. INTENTAR TOGGLE CATEGORÍA INEXISTENTE (DEBE FALLAR)
-###
-PATCH {{baseUrl}}/api/item-categories/999/toggle
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### ============================================
+### ESTRUCTURA DE RESPUESTAS
+### ============================================
 
-###
-### 24. ELIMINAR CATEGORÍA - ID 4 (SIN ITEMS ASOCIADOS)
-###
-DELETE {{baseUrl}}/api/item-categories/6
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### CreateItemCategoryRequest (POST/PUT):
+### {
+###   "name": "string (requerido, min: 1, max: 100)",
+###   "description": "string (requerido, min: 1, max: 255)"
+### }
 
-###
-### 25. INTENTAR ELIMINAR CATEGORÍA QUE NO EXISTE (DEBE FALLAR)
-###
-DELETE {{baseUrl}}/api/item-categories/999
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### ItemCategoryResponse (GET):
+### {
+###   "id": number,
+###   "name": "string",
+###   "description": "string",
+###   "active": boolean
+### }
 
-###
-### 26. INTENTAR ELIMINAR SIN TOKEN (DEBE FALLAR)
-###
-DELETE {{baseUrl}}/api/item-categories/1
-Content-Type: application/json
+### PaginatedItemCategoryResponse (GET /paginated):
+### {
+###   "content": [ItemCategoryResponse],
+###   "pageNumber": number,
+###   "pageSize": number,
+###   "totalElements": number,
+###   "totalPages": number,
+###   "isLast": boolean
+### }
 
-###
-### 27. OBTENER TODAS LAS CATEGORÍAS (PARA VERIFICAR CAMBIOS)
-###
-GET {{baseUrl}}/api/item-categories
-Content-Type: application/json
-
-###
-### 28. OBTENER CATEGORÍA ID 1 (PARA VERIFICAR ACTUALIZACIÓN)
-###
-GET {{baseUrl}}/api/item-categories/1
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-###
-### RESUMEN DE PRUEBAS:
-###
-### CREAR (POST):
-### ✓ 1-4: Crear categorías válidas
-### ✗ 5: Duplicado (debe fallar)
-### ✗ 6: Sin autenticación (debe fallar)
-### ✗ 7: Nombre vacío (debe fallar)
-###
-### LEER (GET):
-### ✓ 8-11: Obtener todas y por ID válidos
-### ✗ 12: ID inexistente (debe fallar)
-###
-### ACTUALIZAR (PUT):
-### ✓ 13-14: Actualizar categorías válidas
-### ✗ 15: Nombre duplicado (debe fallar)
-### ✗ 16: Sin autenticación (debe fallar)
-### ✗ 17: ID inexistente (debe fallar)
-###
-### TOGGLE (PATCH):
-### ✓ 18-21: Activar/desactivar categorías
-### ✗ 22: Sin autenticación (debe fallar)
-### ✗ 23: ID inexistente (debe fallar)
-###
-### ELIMINAR (DELETE):
-### ✓ 24: Eliminar categoría sin items
-### ✗ 25: ID inexistente (debe fallar)
-### ✗ 26: Sin autenticación (debe fallar)
-###
-### VERIFICACIÓN FINAL:
-### ✓ 27-28: Verificar cambios en la BD
-###
 

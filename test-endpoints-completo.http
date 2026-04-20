@@ -1,0 +1,581 @@
+### =====================================
+### DOCUMENTO DE TESTEO - SERVLY
+### Endpoints: ADMIN, Mesas, Productos
+### =====================================
+
+@baseUrl = http://localhost:8081
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NTE2Nzg0NywiZXhwIjoxNzc1MjU0MjQ3fQ.Sd6_ZqHfJgR7h7LHK-AJktvm_NXXx59z2aJIl1Z4LFZ_b-ho3V2JkpC4CvEaxESkBzMsdYYR3pMuvT4VypcYRw
+@staffToken = REEMPLAZAR_CON_TOKEN_STAFF
+
+### =====================================
+### 1. OBTENER TOKENS (Primero ejecutar)
+### =====================================
+
+### Login como ADMIN
+# POST http://{{baseUrl}}/api/auth/login
+# Content-Type: application/json
+#
+# {
+#   "email": "admin@servly.com",
+#   "password": "AdminPassword123"
+# }
+
+### Login como STAFF (Mesero/Cajero)
+# POST http://{{baseUrl}}/api/auth/login
+# Content-Type: application/json
+#
+# {
+#   "email": "staff@servly.com",
+#   "password": "StaffPassword123"
+# }
+
+---
+
+### =====================================
+### 2. ENDPOINTS PUBLICOS - CLIENTE
+### =====================================
+
+### Obtener sesión de mesa (escanear QR)
+### Este endpoint es PÚBLICO - no requiere token
+GET http://{{baseUrl}}/api/client/session?table=1
+
+---
+
+### =====================================
+### 3. ENDPOINTS ADMIN - GESTIÓN DE MESAS
+### =====================================
+
+### Crear Nueva Mesa
+POST http://{{baseUrl}}/api/admin/tables
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "tableNumber": 12,
+  "capacity": 4,
+  "location": "Área Aperos"
+}
+
+### Listar Todas las Mesas
+GET http://{{baseUrl}}/api/staff/tables
+Authorization: Bearer {{adminToken}}
+
+### Obtener Mesa Específica
+GET http://{{baseUrl}}/api/staff/tables/10
+Authorization: Bearer {{adminToken}}
+
+### Cambiar Estado de Mesa
+PATCH http://{{baseUrl}}/api/admin/tables/1/status?status=AVAILABLE
+Authorization: Bearer {{adminToken}}
+
+
+### Eliminar Mesa
+DELETE http://{{baseUrl}}/api/admin/tables/1
+Authorization: Bearer {{adminToken}}
+
+---
+
+### =====================================
+### 4. ENDPOINTS STAFF - MESAS
+### =====================================
+
+### Ver todas las mesas (STAFF)
+GET http://{{baseUrl}}/api/staff/tables
+Authorization: Bearer {{staffToken}}
+
+### Obtener una mesa (STAFF)
+GET http://{{baseUrl}}/api/staff/tables/5
+Authorization: Bearer {{staffToken}}
+
+### Cerrar sesión de una mesa
+DELETE http://{{baseUrl}}/api/staff/tables/1/session
+Authorization: Bearer {{staffToken}}
+
+### Ver estado de mesa
+GET http://{{baseUrl}}/api/staff/tables/1/session/status
+Authorization: Bearer {{staffToken}}
+
+---
+
+### =====================================
+### 5. ENDPOINTS ADMIN - PRODUCTOS Y RECETAS
+### =====================================
+
+### ========== PASO 0: CREAR ITEMS PRIMERO (INGREDIENTES) ==========
+### IMPORTANTE: Los items deben crearse ANTES de las recetas
+
+### Crear Item - Carne Molida
+POST http://{{baseUrl}}/api/items
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Carne Molida",
+  "description": "Carne de res molida 80/20",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 15,
+  "itemCategoryId": 11
+}
+
+### Crear Item - Queso
+POST http://{{baseUrl}}/api/items
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Queso Amarillo",
+  "description": "Queso slice",
+  "unitOfMeasurement": "unit",
+  "expirationDays": 30,
+  "itemCategoryId": 2
+}
+
+### Crear Item - Lechuga
+POST http://{{baseUrl}}/api/items
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Lechuga",
+  "description": "Lechuga fresca",
+  "unitOfMeasurement": "kg",
+  "expirationDays": 5,
+  "itemCategoryId": 3
+}
+
+### ========== PASO 1: CREAR RECETAS CON LOS ITEMS ==========
+### Ahora que existen los items, crear las recetas
+### Importante: Especificar itemDetails con itemId, quantity, isOptional
+
+### Crear Recipe para Hamburguesa (CON itemDetails)
+POST http://{{baseUrl}}/api/admin/recipes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Receta Hamburguesa Clásica",
+  "quantity": 1,
+  "description": "Ingredientes para hacer una hamburguesa",
+  "itemDetails": [
+    {
+      "itemId": 1,
+      "quantity": 100,
+      "annotation": "Picada fina",
+      "isOptional": false
+    },
+    {
+      "itemId": 2,
+      "quantity": 1,
+      "annotation": "Queso amarillo",
+      "isOptional": true
+    },
+    {
+      "itemId": 3,
+      "quantity": 2,
+      "annotation": "Hojitas frescas",
+      "isOptional": true
+    }
+  ]
+}
+
+### Crear Recipe para Pizza
+POST http://{{baseUrl}}/api/admin/recipes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Receta Pizza Margherita",
+  "quantity": 1,
+  "description": "Ingredientes para pizza",
+  "itemDetails": [
+    {
+      "itemId": 1,
+      "quantity": 200,
+      "annotation": "Como salsa base",
+      "isOptional": false
+    },
+    {
+      "itemId": 2,
+      "quantity": 2,
+      "annotation": "Mozzarella",
+      "isOptional": false
+    }
+  ]
+}
+
+### Obtener todas las recetas
+GET http://{{baseUrl}}/api/admin/recipes
+Authorization: Bearer {{adminToken}}
+
+### Obtener receta específica por ID
+GET http://{{baseUrl}}/api/admin/recipes/1
+Authorization: Bearer {{adminToken}}
+
+### Actualizar receta
+PUT http://{{baseUrl}}/api/admin/recipes/1
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Receta Hamburguesa Mejorada",
+  "quantity": 1,
+  "description": "Ingredientes mejorados"
+}
+
+### Eliminar receta
+DELETE http://{{baseUrl}}/api/admin/recipes/1
+Authorization: Bearer {{adminToken}}
+
+### ========== PASO 2: CREAR PRODUCTOS CON RECETAS ==========
+
+### Crear Producto - Hamburguesa CON Receta
+POST http://{{baseUrl}}/api/admin/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Hamburguesa Clásica",
+  "description": "Carne molida, queso, lechuga, tomate",
+  "price": 25000,
+  "productCategoryId": 1,
+  "active": true,
+  "recipeId": 1
+}
+
+### Crear Producto - Pizza CON Receta
+POST http://{{baseUrl}}/api/admin/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Pizza Margherita",
+  "description": "Tomate, mozzarella, albahaca",
+  "price": 30000,
+  "productCategoryId": 2,
+  "active": true,
+  "recipeId": 2
+}
+
+### Crear Bebida SIN receta - Producto Simple
+POST http://{{baseUrl}}/api/admin/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Coca Cola 500ml",
+  "description": "Bebida gaseosa",
+  "price": 5000,
+  "productCategoryId": 3,
+  "active": true
+}
+
+### Listar Todos los Productos (Paginado)
+GET http://{{baseUrl}}/api/admin/products?page=0&size=10&sort=id,desc
+Authorization: Bearer {{adminToken}}
+
+### Listar Productos Activos (Paginado)
+GET http://{{baseUrl}}/api/admin/products/active?page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### Obtener Producto por ID
+GET http://{{baseUrl}}/api/admin/products/1
+Authorization: Bearer {{adminToken}}
+
+### Actualizar Producto (Nombre y Precio)
+PUT http://{{baseUrl}}/api/admin/products/1
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Hamburguesa Premium",
+  "price": 32000,
+  "description": "Hamburguesa mejorada con carnes especiales"
+}
+
+### Desactivar Producto (Borrado Lógico)
+DELETE http://{{baseUrl}}/api/admin/products/1
+Authorization: Bearer {{adminToken}}
+
+### Activar Producto
+PATCH http://{{baseUrl}}/api/admin/products/1/activate
+Authorization: Bearer {{adminToken}}
+
+### Desactivar Producto
+PATCH http://{{baseUrl}}/api/admin/products/1/deactivate
+Authorization: Bearer {{adminToken}}
+
+### Listar Todos los Productos (Paginado)
+GET http://{{baseUrl}}/api/admin/products?page=0&size=10&sort=id,desc
+Authorization: Bearer {{adminToken}}
+
+
+---
+
+### =====================================
+### 6. ENDPOINTS ADMIN - USUARIOS/EMPLEADOS
+### =====================================
+
+### Crear Empleado
+POST http://{{baseUrl}}/api/admin/employees
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "mesero1@servly.com",
+  "name": "Juan García",
+  "role": "WAITER"
+}
+
+### Listar Todos los Usuarios
+GET http://{{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+
+### Obtener Usuario por ID
+GET http://{{baseUrl}}/api/admin/users/user-id-123
+Authorization: Bearer {{adminToken}}
+
+### Cambiar Rol de Usuario
+PUT http://{{baseUrl}}/api/admin/users/user-id-123/role
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "role": "CASHIER"
+}
+
+### Activar/Desactivar Usuario
+PATCH http://{{baseUrl}}/api/admin/users/user-id-123/toggle
+Authorization: Bearer {{adminToken}}
+
+### Eliminar Usuario
+DELETE http://{{baseUrl}}/api/admin/users/user-id-123
+Authorization: Bearer {{adminToken}}
+
+---
+
+### =====================================
+### 7. ENDPOINTS ADMIN - MÉTRICAS
+### =====================================
+
+### Obtener Métricas Auth (últimos 7 días)
+GET http://{{baseUrl}}/api/admin/metrics/auth
+Authorization: Bearer {{adminToken}}
+
+### Obtener Métricas Auth (últimos 30 días)
+GET http://{{baseUrl}}/api/admin/metrics/auth/30days
+Authorization: Bearer {{adminToken}}
+
+### Obtener Métricas Auth (rango personalizado)
+GET http://{{baseUrl}}/api/admin/metrics/auth/custom?start=2026-03-01T00:00:00&end=2026-03-10T23:59:59
+Authorization: Bearer {{adminToken}}
+
+### Health Check Admin
+GET http://{{baseUrl}}/api/admin/health
+Authorization: Bearer {{adminToken}}
+
+---
+
+### =====================================
+### 8. ENDPOINTS PUBLICOS - MENU CLIENTE
+### =====================================
+
+### Obtener Todos los Productos del Menú (Público)
+GET http://{{baseUrl}}/api/menu/products
+
+### Obtener Producto Específico (Público)
+GET http://{{baseUrl}}/api/menu/products/1
+
+---
+
+### =====================================
+### INSTRUCCIONES DE USO
+### =====================================
+
+### 1. FLUJO DE CREACIÓN DE PRODUCTOS CON RECETAS:
+###
+### a) Crear categorías de items (si no existen):
+###    POST /api/item-categories
+###    Body: { "name": "Carnes", "description": "..." }
+###
+### b) Crear items en bodega (ingredientes):
+###    POST /api/items
+###    Body: { "name": "Carne Molida", "stock": 1000, ... }
+###
+### c) Crear receta (opcional, solo para productos complejos):
+###    POST /api/admin/recipes
+###    Body con itemDetails[] que especifica qué items se usan
+###
+### d) Crear producto y vincular receta:
+###    POST /api/admin/products
+###    Body: { "name": "...", "recipeId": 1, ... }
+###
+### 2. PRODUCTOS SIN RECETA:
+###    - Bebidas simples, postres comprados, etc.
+###    - Solo requieren POST /api/admin/products
+###    - Sin campo recipeId
+###
+### 3. DESCUENTO AUTOMÁTICO DE INVENTARIO:
+###    - Cuando se CREA una orden con un producto que tiene receta
+###    - Se descuentan automáticamente los items del inventario
+###    - Si no hay suficientes items, la orden NO se crea
+###    - Si hay items opcionales, se usan solo si hay disponibles
+###
+### 4. CONFIGURAR TOKENS
+### - Ejecutar los endpoints de LOGIN comentados arriba
+### - Copiar el token del campo "accessToken" de la respuesta
+### - Reemplazar {{adminToken}} y {{staffToken}} con los valores reales
+###   En VS Code: Ctrl+H (Find and Replace)
+
+### 5. FLUJO DE PRUEBA RECOMENDADO
+### a) Obtener sesión de mesa (PUBLIC)
+###    GET /api/client/session?table=1
+###
+### b) Crear items en bodega (para recetas)
+###    POST /api/items (3-5 ejemplos)
+###
+### c) Crear recetas
+###    POST /api/admin/recipes
+###
+### d) Crear productos (con y sin recetas)
+###    POST /api/admin/products (3 ejemplos)
+###
+### e) Ver mesas
+###    GET /api/staff/tables
+###
+### f) Crear mesa
+###    POST /api/admin/tables
+###
+### g) Crear orden
+###    POST /api/orders
+
+### 6. NOTAS IMPORTANTES
+### - Todos los endpoints ADMIN requieren token JWT con ROLE_ADMIN
+### - Todos los endpoints STAFF requieren token JWT con ROLE_WAITER o ROLE_CASHIER
+### - Los endpoints de CLIENT no requieren autenticación
+### - Los endpoints de MENU son públicos
+### - Las recetas vinculan ITEMS (inventario) con PRODUCTOS (menú)
+### - La receta es OPCIONAL en el producto
+### - Al pagar una orden, se descuentan automáticamente los items de la receta
+
+---
+
+### =====================================
+### RESPUESTAS ESPERADAS
+### =====================================
+
+### Producto Creado (201)
+#{
+#  "id": 1,
+#  "name": "Hamburguesa Clásica",
+#  "description": "Carne molida, queso, lechuga, tomate",
+#  "price": 25000,
+#  "active": true,
+#  "recipe": {
+#    "id": 1,
+#    "name": "Receta Hamburguesa Clásica",
+#    "itemDetails": [...]
+#  },
+#  "category": {
+#    "id": 1,
+#    "name": "Comidas Principales"
+#  }
+#}
+
+### Receta Creada (201)
+#{
+#  "id": 1,
+#  "name": "Receta Hamburguesa Clásica",
+#  "description": "Ingredientes para hacer una hamburguesa",
+#  "itemDetails": [
+#    {
+#      "itemId": 1,
+#      "itemName": "Carne Molida",
+#      "quantity": 100,
+#      "isOptional": false
+#    },
+#    {
+#      "itemId": 2,
+#      "itemName": "Queso",
+#      "quantity": 50,
+#      "isOptional": true
+#    }
+#  ]
+#}
+
+### Mesas Obtenidas (200)
+#{
+#  [
+#    {
+#      "id": 1,
+#      "tableNumber": 1,
+#      "capacity": 4,
+#      "location": "Área Principal",
+#      "status": "AVAILABLE"
+#    },
+#    {
+#      "id": 2,
+#      "tableNumber": 2,
+#      "capacity": 2,
+#      "location": "Ventana",
+#      "status": "OCCUPIED"
+#    }
+#  ]
+#}
+
+### Sesión de Mesa Abierta (200)
+#{
+#  "sessionToken": "eyJhbGc...",
+#  "tableNumber": 1,
+#  "expiresAt": "2026-04-02T23:59:59"
+#}
+
+---
+
+### =====================================
+### CÓMO FUNCIONAN LAS RECETAS
+### =====================================
+
+### Una receta es el VÍNCULO entre PRODUCTOS (menú) e ITEMS (inventario)
+###
+### FLUJO COMPLETO:
+###
+### 1. CREAR ITEMS (bodega/inventario)
+###    POST /api/items
+###    {
+###      "name": "Carne Molida",
+###      "stock": 5000,
+###      "categoryId": 1
+###    }
+###
+### 2. CREAR RECETA (vincula los items)
+###    POST /api/admin/recipes
+###    {
+###      "name": "Receta Hamburguesa",
+###      "itemDetails": [
+###        { "itemId": 1, "quantity": 100, "isOptional": false },
+###        { "itemId": 2, "quantity": 50, "isOptional": true }
+###      ]
+###    }
+###
+### 3. CREAR PRODUCTO (vincula la receta)
+###    POST /api/admin/products
+###    {
+###      "name": "Hamburguesa Clásica",
+###      "price": 25000,
+###      "productCategoryId": 1,
+###      "recipeId": 1        <-- AQUÍ se vincula la receta
+###    }
+###
+### CUANDO SE CREA UNA ORDEN:
+### - El cliente pide "1 Hamburguesa Clásica"
+### - El sistema busca el producto y su receta
+### - Al PAGAR, el sistema DESCUENTA automáticamente del inventario:
+###   * 100 unidades de Carne Molida
+###   * 50 unidades de Queso (si está disponible)
+###
+### SI NO HAY INVENTARIO SUFICIENTE:
+### - La orden NO se crea si falta un item OBLIGATORIO
+### - Si falta un item OPCIONAL, simplemente se omite ese item
+
+---
+

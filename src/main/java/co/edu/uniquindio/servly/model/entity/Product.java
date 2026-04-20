@@ -1,10 +1,11 @@
 package co.edu.uniquindio.servly.model.entity;
 
 import jakarta.persistence.*;
-import jakarta.persistence.Table;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product")
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Where(clause = "deleted = false")
 public class Product {
 
     @Id
@@ -28,11 +30,28 @@ public class Product {
     @Column(length = 500)
     private String description;
 
-    @OneToOne
-    @JoinColumn(name = "recipe_id", nullable = false, unique = true)
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipe_id")
     private Recipe recipe;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = true)
     private ProductCategory category;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Column(name = "public_id", length = 255)
+    private String publicId;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

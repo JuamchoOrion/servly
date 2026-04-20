@@ -40,8 +40,6 @@ public class VerificationCodeService {
     private final UserRepository             userRepository;
     private final AuditService               auditService;
     private final AuthMetricsService      authMetricsService;
-    private final co.edu.uniquindio.servly.metrics.AuthMetricsService authMetricsService;
-
     @Value("${app.two-factor.code-expiration-minutes}")
     private int twoFactorExpiration;
 

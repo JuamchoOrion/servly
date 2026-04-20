@@ -1,0 +1,161 @@
+### Variables
+@host = http://localhost:8081
+@tableNumber = 10
+@productId1 = 1
+@productId2 = 2
+@quantity1 = 1
+@quantity2 = 1
+
+### ============================================
+### FLUJO COMPLETO: CLIENTE ORDENA Y PAGA
+### ============================================
+
+### 1. CLIENTE: Abrir sesión de mesa (Escanear QR)
+GET {{host}}/api/client/session?table={{tableNumber}}
+
+### Guardar el sessionToken de la respuesta anterior
+
+### 2. CLIENTE: Obtener menú sin paginación
+GET {{host}}/api/products/active
+
+### 3. CLIENTE: Obtener menú con paginación
+GET {{host}}/api/menu/products?page=0&size=10
+
+### 4. CLIENTE: Obtener detalle de un producto
+GET {{host}}/api/products/{{productId1}}
+
+### 5. CLIENTE: Crear orden (POST)
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": {{productId1}},
+      "quantity": {{quantity1}}
+    }
+  ]
+}
+
+### Guardar el orderId de la respuesta (ej: 5)
+
+### 6. CLIENTE: Obtener órdenes de la mesa actual
+GET {{host}}/api/client/orders
+
+### 7. CLIENTE: Obtener detalle de una orden específica (PENDING)
+GET {{host}}/api/client/orders/1
+
+### 8. CLIENTE: Esperar... la orden está en PENDING
+GET {{host}}/api/client/orders/1
+
+### 9. CLIENTE: Esperar... la orden está en IN_PREPARATION
+GET {{host}}/api/client/orders/1
+
+### 10. CLIENTE: Esperar... la orden está en SERVED
+GET {{host}}/api/client/orders/1
+
+### 11. CLIENTE: Solicitar ayuda (botón de llamada al mesero)
+POST {{host}}/api/client/orders/1/request-help
+
+### 12. CLIENTE: Confirmar que recibió la comida
+GET {{host}}/api/client/orders/1/confirm-delivery
+
+### ============================================
+### FLUJO STAFF/ADMIN: PREPARAR Y PROCESAR PAGO
+### ============================================
+
+### Variables para Admin
+@adminToken = eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc0NDg3NjkzNCwiaWF0IjoxNzQ0NzMzMTM0LCJST0xFUyI6IlJPTEVfQURNSU4ifQ.test
+
+### 13. ADMIN: Obtener órdenes pendientes
+GET {{host}}/api/staff/orders/pending
+Authorization: Bearer {{adminToken}}
+
+### 14. ADMIN: Obtener órdenes en preparación
+GET {{host}}/api/staff/orders/in-preparation
+Authorization: Bearer {{adminToken}}
+
+### 15. ADMIN: Obtener órdenes de una mesa específica
+GET {{host}}/api/staff/tables/{{tableNumber}}/orders
+Authorization: Bearer {{adminToken}}
+
+### 16. ADMIN: Cambiar estado a IN_PREPARATION (Cocina comienza)
+POST {{host}}/api/staff/orders/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
+
+### 17. ADMIN: Cambiar estado a SERVED (Comida lista)
+POST {{host}}/api/staff/orders/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "SERVED"
+}
+
+### 18. ADMIN: Generar factura (antes de confirmar pago)
+GET {{host}}/api/staff/orders/1/invoice
+Authorization: Bearer {{adminToken}}
+
+### 19. ADMIN: Confirmar pago (cambia automáticamente a PAID)
+POST {{host}}/api/staff/orders/1/confirm-payment
+Authorization: Bearer {{adminToken}}
+
+### 20. CLIENTE: Verificar estado final (PAID)
+GET {{host}}/api/client/orders/1
+
+### 21. ADMIN: Cancelar una orden (si es necesario)
+POST {{host}}/api/staff/orders/1/cancel
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### FLUJO ALTERNATIVO: MÚLTIPLES ÓRDENES
+### ============================================
+
+### 22. CLIENTE: Crear segunda orden con múltiples productos
+POST {{host}}/api/client/orders
+Content-Type: application/json
+
+{
+  "products": [
+    {
+      "productId": {{productId1}},
+      "quantity": 2
+    },
+    {
+      "productId": {{productId2}},
+      "quantity": 1
+    }
+  ]
+}
+
+### 24. CLIENTE: Obtener todas sus órdenes
+GET {{host}}/api/client/orders
+
+### ============================================
+### MÁQUINA DE ESTADOS PERMITIDA
+### ============================================
+
+### Transiciones válidas:
+### PENDING → IN_PREPARATION
+### IN_PREPARATION → SERVED
+### SERVED → PAID
+### Cualquier estado → CANCELLED
+
+### Ejemplo: Pasar directamente de SERVED a PAID
+POST {{host}}/api/staff/orders/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "PAID"
+}
+
+### Ejemplo: Cancelar una orden desde cualquier estado
+POST {{host}}/api/staff/orders/1/cancel
+Authorization: Bearer {{adminToken}}
+

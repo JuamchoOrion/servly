@@ -47,6 +47,9 @@ public class TableSession {
     @Builder.Default
     private boolean active = true;
 
+    @Column(nullable = false, name = "table_number")
+    private Integer tableNumber;
+
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
