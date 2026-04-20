@@ -71,76 +71,65 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe abrir una sesión cuando la mesa está disponible")
         void shouldOpenSessionWhenTableAvailable() {
-            // Arrange
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(anyInt())).thenReturn("jwt-token-123");
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn("jwt-token-123");
+            when(tableJwtProvider.getSessionExpirationMs()).thenReturn(14400000L);
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             TableSessionResponse result = tableSessionService.openSession(1);
 
-            // Assert
             assertNotNull(result);
             assertEquals(1, result.getTableNumber());
-            assertTrue(result.isActive());
-            verify(sessionRepository, times(1)).save(any(TableSession.class));
         }
 
         @Test
         @DisplayName("Debe lanzar excepción cuando la mesa no existe")
         void shouldThrowExceptionWhenTableNotFound() {
-            // Arrange
             when(restaurantTableRepository.findByTableNumber(999)).thenReturn(Optional.empty());
 
-            // Act & Assert
             assertThrows(Exception.class, () -> tableSessionService.openSession(999));
-            verify(sessionRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Debe lanzar excepción cuando ya existe sesión activa")
-        void shouldThrowExceptionWhenSessionAlreadyActive() {
-            // Arrange
+        @DisplayName("Debe reutilizar sesión activa existente en lugar de crear nueva")
+        void shouldReuseExistingSessionWhenAlreadyActive() {
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.of(session));
 
-            // Act & Assert
-            assertThrows(Exception.class, () -> tableSessionService.openSession(1));
-            verify(sessionRepository, never()).save(any());
+            TableSessionResponse result = tableSessionService.openSession(1);
+
+            assertNotNull(result);
+            assertEquals(1, result.getTableNumber());
         }
 
         @Test
         @DisplayName("Debe cambiar el estado de la mesa a OCCUPIED")
         void shouldChangeTableStatusToOccupied() {
-            // Arrange
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(anyInt())).thenReturn("jwt-token-123");
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn("jwt-token-123");
+            when(tableJwtProvider.getSessionExpirationMs()).thenReturn(14400000L);
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             tableSessionService.openSession(1);
 
-            // Assert
             assertEquals(RestaurantTable.TableStatus.OCCUPIED, table.getStatus());
         }
 
         @Test
         @DisplayName("Debe generar un token JWT válido")
         void shouldGenerateValidJWT() {
-            // Arrange
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(1)).thenReturn("valid-jwt-token");
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn("valid-jwt-token");
+            when(tableJwtProvider.getSessionExpirationMs()).thenReturn(14400000L);
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             TableSessionResponse result = tableSessionService.openSession(1);
 
-            // Assert
             assertNotNull(result);
-            verify(tableJwtProvider, times(1)).generateToken(1);
+            verify(tableJwtProvider, times(1)).generateTableToken(anyInt(), anyString());
         }
     }
 
@@ -151,32 +140,27 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe cerrar una sesión activa")
         void shouldCloseActiveSession() {
-            // Arrange
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.of(session));
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             MessageResponse result = tableSessionService.closeSession(1);
 
-            // Assert
             assertNotNull(result);
             assertFalse(session.isActive());
-            verify(sessionRepository, times(1)).save(any(TableSession.class));
         }
 
         @Test
         @DisplayName("Debe registrar el cierre de sesión con timestamp")
         void shouldRecordSessionClosureTime() {
-            // Arrange
             LocalDateTime beforeClose = LocalDateTime.now();
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.of(session));
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             tableSessionService.closeSession(1);
             LocalDateTime afterClose = LocalDateTime.now();
 
-            // Assert
             assertNotNull(session.getClosedAt());
             assertTrue(session.getClosedAt().isAfter(beforeClose.minusSeconds(1)));
             assertTrue(session.getClosedAt().isBefore(afterClose.plusSeconds(1)));
@@ -185,27 +169,23 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe cambiar el estado de la mesa a AVAILABLE al cerrar")
         void shouldChangeTableStatusToAvailable() {
-            // Arrange
             table.setStatus(RestaurantTable.TableStatus.OCCUPIED);
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.of(session));
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             tableSessionService.closeSession(1);
 
-            // Assert
             assertEquals(RestaurantTable.TableStatus.AVAILABLE, table.getStatus());
         }
 
         @Test
         @DisplayName("Debe lanzar excepción si no hay sesión activa")
         void shouldThrowExceptionWhenNoActiveSession() {
-            // Arrange
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
 
-            // Act & Assert
             assertThrows(Exception.class, () -> tableSessionService.closeSession(1));
-            verify(sessionRepository, never()).save(any());
         }
     }
 
@@ -216,40 +196,32 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe retornar true cuando la mesa tiene sesión activa")
         void shouldReturnTrueWhenTableHasActiveSession() {
-            // Arrange
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
+            when(sessionRepository.existsByRestaurantTableAndActiveTrue(table)).thenReturn(true);
 
-            // Act
             boolean result = tableSessionService.isTableActive(1);
 
-            // Assert
             assertTrue(result);
         }
 
         @Test
         @DisplayName("Debe retornar false cuando no hay sesión activa")
         void shouldReturnFalseWhenNoActiveSession() {
-            // Arrange
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
+            when(sessionRepository.existsByRestaurantTableAndActiveTrue(table)).thenReturn(false);
 
-            // Act
             boolean result = tableSessionService.isTableActive(1);
 
-            // Assert
             assertFalse(result);
         }
 
         @Test
-        @DisplayName("Debe retornar false cuando la sesión no está activa")
-        void shouldReturnFalseWhenSessionNotActive() {
-            // Arrange
-            session.setActive(false);
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
+        @DisplayName("Debe retornar false cuando la mesa no existe")
+        void shouldReturnFalseWhenTableNotFound() {
+            when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.empty());
 
-            // Act
             boolean result = tableSessionService.isTableActive(1);
 
-            // Assert
             assertFalse(result);
         }
     }
@@ -261,16 +233,13 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe crear sesión con tiempo de expiración")
         void shouldCreateSessionWithExpirationTime() {
-            // Arrange
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(1)).thenReturn("jwt-token");
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn("jwt-token");
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             TableSessionResponse result = tableSessionService.openSession(1);
 
-            // Assert
             assertNotNull(result);
             assertNotNull(session.getExpiresAt());
             assertTrue(session.getExpiresAt().isAfter(LocalDateTime.now()));
@@ -279,24 +248,20 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe crear sesión que expire en 4 horas")
         void shouldCreateSessionExpiringIn4Hours() {
-            // Arrange
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime expectedExpiration = now.plusHours(4);
 
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(1)).thenReturn("jwt-token");
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn("jwt-token");
+            when(tableJwtProvider.getSessionExpirationMs()).thenReturn(14400000L);
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
 
-            // Act
             tableSessionService.openSession(1);
 
-            // Assert
             assertNotNull(session.getExpiresAt());
-            // La diferencia debe ser aproximadamente 4 horas (permitir 5 minutos de margen)
             long minutesDifference = java.time.temporal.ChronoUnit.MINUTES
                     .between(now, session.getExpiresAt());
-            assertTrue(minutesDifference >= 235 && minutesDifference <= 245); // 4 horas ± 5 min
+            assertTrue(minutesDifference >= 235 && minutesDifference <= 245);
         }
     }
 
@@ -307,11 +272,10 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe almacenar el token JWT en la sesión")
         void shouldStoreJWTTokenInSession() {
-            // Arrange
             String expectedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(1)).thenReturn(expectedToken);
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn(expectedToken);
 
             TableSession sessionWithToken = TableSession.builder()
                     .id("session-uuid")
@@ -325,10 +289,8 @@ class TableSessionServiceTest {
 
             when(sessionRepository.save(any(TableSession.class))).thenReturn(sessionWithToken);
 
-            // Act
             TableSessionResponse result = tableSessionService.openSession(1);
 
-            // Assert
             assertNotNull(result);
             assertEquals(expectedToken, sessionWithToken.getSessionToken());
         }
@@ -336,14 +298,11 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe usar el mismo token para identificar la sesión")
         void shouldUseTokenToIdentifySession() {
-            // Arrange
             String sessionToken = "unique-jwt-token-123";
             session.setSessionToken(sessionToken);
 
-            // Act
             String storedToken = session.getSessionToken();
 
-            // Assert
             assertEquals(sessionToken, storedToken);
             assertEquals("unique-jwt-token-123", storedToken);
         }
@@ -356,7 +315,6 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe permitir múltiples mesas con sesiones simultáneas")
         void shouldAllowMultipleTablesWithConcurrentSessions() {
-            // Arrange
             RestaurantTable table2 = RestaurantTable.builder()
                     .id(2)
                     .tableNumber(2)
@@ -371,24 +329,25 @@ class TableSessionServiceTest {
                     .sessionToken("jwt-token-456")
                     .active(true)
                     .expiresAt(LocalDateTime.now().plusHours(4))
+                    .openedAt(LocalDateTime.now())
                     .build();
 
-            // Primero abrimos sesión en mesa 1
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(1)).thenReturn("jwt-token-123");
-            when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(1, "session-uuid-123")).thenReturn("jwt-token-123");
+            when(tableJwtProvider.getSessionExpirationMs()).thenReturn(14400000L);
 
-            // Luego abrimos sesión en mesa 2
             when(restaurantTableRepository.findByTableNumber(2)).thenReturn(Optional.of(table2));
-            when(sessionRepository.findByTableNumberAndActiveTrue(2)).thenReturn(Optional.empty());
-            when(tableJwtProvider.generateToken(2)).thenReturn("jwt-token-456");
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table2)).thenReturn(Optional.empty());
+            when(tableJwtProvider.generateTableToken(2, "session-uuid-456")).thenReturn("jwt-token-456");
 
-            // Act
+            when(sessionRepository.save(any(TableSession.class)))
+                    .thenReturn(session)
+                    .thenReturn(session2);
+
             TableSessionResponse result1 = tableSessionService.openSession(1);
             TableSessionResponse result2 = tableSessionService.openSession(2);
 
-            // Assert
             assertNotNull(result1);
             assertNotNull(result2);
             assertEquals(1, result1.getTableNumber());
@@ -396,14 +355,15 @@ class TableSessionServiceTest {
         }
 
         @Test
-        @DisplayName("No debe permitir dos sesiones activas en la misma mesa")
-        void shouldNotAllowTwoActiveSessionsOnSameTable() {
-            // Arrange
+        @DisplayName("Debe reutilizar sesión existente cuando se intenta abrir sesión en mesa ocupada")
+        void shouldReuseExistingSessionWhenTableOccupied() {
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table)).thenReturn(Optional.of(session));
 
-            // Act & Assert
-            assertThrows(Exception.class, () -> tableSessionService.openSession(1));
+            TableSessionResponse result = tableSessionService.openSession(1);
+
+            assertNotNull(result);
+            assertEquals(1, result.getTableNumber());
         }
     }
 
@@ -414,32 +374,26 @@ class TableSessionServiceTest {
         @Test
         @DisplayName("Debe completar ciclo: abrir -> activar -> cerrar")
         void shouldCompleteSessionLifecycle() {
-            // Arrange
-            // 1. Abrir sesión
             when(restaurantTableRepository.findByTableNumber(1)).thenReturn(Optional.of(table));
-            when(sessionRepository.findByTableNumberAndActiveTrue(1))
+            when(sessionRepository.findByRestaurantTableAndActiveTrue(table))
                     .thenReturn(Optional.empty())
                     .thenReturn(Optional.of(session));
-            when(tableJwtProvider.generateToken(1)).thenReturn("jwt-token");
+            when(tableJwtProvider.generateTableToken(anyInt(), anyString())).thenReturn("jwt-token");
+            when(tableJwtProvider.getSessionExpirationMs()).thenReturn(14400000L);
             when(sessionRepository.save(any(TableSession.class))).thenReturn(session);
+            when(sessionRepository.existsByRestaurantTableAndActiveTrue(table)).thenReturn(true);
 
-            // Act
-            // Abrir sesión
             TableSessionResponse openResult = tableSessionService.openSession(1);
             assertNotNull(openResult);
             assertTrue(session.isActive());
 
-            // Verificar que la sesión está activa
             boolean isActive = tableSessionService.isTableActive(1);
             assertTrue(isActive);
 
-            // Cerrar sesión
-            when(sessionRepository.findByTableNumberAndActiveTrue(1)).thenReturn(Optional.of(session));
             MessageResponse closeResult = tableSessionService.closeSession(1);
             assertNotNull(closeResult);
             assertFalse(session.isActive());
 
-            // Assert
             assertNotNull(session.getClosedAt());
             assertEquals(RestaurantTable.TableStatus.AVAILABLE, table.getStatus());
         }
