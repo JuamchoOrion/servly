@@ -74,4 +74,4 @@ jobs:
 
       - name: Show URL
         run: |
-               echo "✅ Deployed: ${{ steps.deploy.outputs.url }}"
+          echo "✅ Deployed: ${{ steps.deploy.outputs.url }}"
