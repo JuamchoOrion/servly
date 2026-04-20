@@ -67,7 +67,7 @@ jobs:
           # ✅ Parámetros via flags (sintaxis Linux: una sola línea, sin ^)
           flags: "--allow-unauthenticated --memory=512Mi --cpu=1 --min-instances=0 --max-instances=3"
           # ✅ Variables de entorno (SIN PORT, Cloud Run lo pone automático)
-          env_vars: SPRING_PROFILES_ACTIVE=production,SUPABASE_DB_URL=jdbc:postgresql://aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require,SUPABASE_DB_USER=postgres.wglrjiiljnzemxrczwmy,SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }},APP_JWT_SECRET=${{ secrets.JWT_SECRET }},APP_JWT_EXPIRATION=86400000
+          env_vars: SPRING_PROFILES_ACTIVE=production,SUPABASE_DB_URL=jdbc:postgresql://aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require,SUPABASE_DB_USER=postgres.wglrjiiljnzemxrczwmy,SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }},APP_JWT_SECRET=${{ secrets.JWT_SECRET }},APP_JWT_EXPIRATION=86400000,APP_JWT_REFRESH_EXPIRATION=259200000
       - name: Show URL
         run: |
           echo "✅ Deployed: ${{ steps.deploy.outputs.url }}"
