@@ -1,0 +1,16 @@
+# .dockerignore
+.git
+.gitignore
+*.md
+*.log
+*.env
+.gradle/
+build/
+!build/libs/*.jar
+src/main/resources/application-local.properties
+src/test/
+**/*Test.java
+.dockerignore
+docker-compose.yml
+prometheus.yml
+grafana/
