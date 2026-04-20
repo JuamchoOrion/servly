@@ -1,0 +1,331 @@
+### TEST - CONTROL DE MESAS
+### Pruebas HTTP para validar el control de estado de mesas
+
+@base = http://localhost:8081
+@adminToken = eyJhbGciOiJIUzUxMiJ9.eyJwYXNzd29yZFZlcnNpb24iOjAsInN1YiI6InNlcnZseTQxQGdtYWlsLmNvbSIsImlhdCI6MTc3NjYzNDIxMiwiZXhwIjoxNzc2NzIwNjEyfQ.zEyEGFBgzDEdFKGNA59Aae82JgyXRSo9W4ls0-XbChcfDhA7EvUaXcK5DqmqfVOsiwmI8Hf1C-B1Afcdp5zaqw
+
+###############################################
+### 1. ABRIR SESIÓN EN MESA DISPONIBLE
+###############################################
+
+### ✅ ÉXITO: Abrir sesión en mesa disponible
+GET {{base}}/api/client/session?table=1
+Content-Type: application/json
+
+> {%
+  if (response.status === 200) {
+    client.global.set('sessionToken', response.body.sessionToken);
+    client.global.set('tableNumber', response.body.tableNumber);
+    console.log('✅ Sesión abierta exitosamente');
+    console.log('Token guardado:', response.body.sessionToken.substring(0, 20) + '...');
+  }
+%}
+
+###############################################
+### 2. INTENTAR ABRIR SESIÓN EN MESA OCUPADA
+###############################################
+
+### ❌ ERROR 409: Mesa ocupada (debe fallar)
+GET {{base}}/api/client/session?table=1
+Content-Type: application/json
+
+> {%
+  if (response.status === 409) {
+    console.log('✅ Validación correcta: Mesa ocupada rechazada');
+    console.log('Mensaje:', response.body.message);
+  }
+%}
+
+###############################################
+### 3. CREAR ORDEN EN MESA
+###############################################
+
+### Crear orden en mesa disponible
+POST {{base}}/api/orders/table
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": 2,
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2,
+      "itemQuantityOverrides": {}
+    }
+  ]
+}
+
+> {%
+  if (response.status === 201) {
+    client.global.set('orderId', response.body.id);
+    console.log('✅ Orden creada:', response.body.id);
+  }
+%}
+
+###############################################
+### 4. OBTENER ÓRDENES DE MESA
+###############################################
+
+### Obtener todas las órdenes (requiere sessionToken)
+GET {{base}}/api/client/orders
+Authorization: Bearer {{sessionToken}}
+Content-Type: application/json
+
+###############################################
+### 5. CAMBIAR ESTADO DE ORDEN A PAID
+###############################################
+
+### 🔑 CLAVE: Cambiar a PAID libera la mesa automáticamente
+PATCH {{base}}/api/orders/{{orderId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "PAID"
+}
+
+> {%
+  if (response.status === 200) {
+    console.log('✅ Orden pagada');
+    console.log('Estado anterior: SERVED');
+    console.log('Estado actual:', response.body.status);
+    console.log('🎉 Mesa fue liberada automáticamente');
+  }
+%}
+
+###############################################
+### 6. VERIFICAR QUE MESA ESTÁ DISPONIBLE
+###############################################
+
+### Ahora debe ser posible abrir sesión nuevamente en la mesa
+GET {{base}}/api/client/session?table=2
+Content-Type: application/json
+
+> {%
+  if (response.status === 200) {
+    console.log('✅ Confirmado: Mesa 2 está AVAILABLE nuevamente');
+    console.log('Nueva sesión abierta:', response.body.sessionId);
+  }
+%}
+
+###############################################
+### 7. FLUJO COMPLETO DE PRUEBA
+###############################################
+
+### PASO 1: Obtener estado de mesas antes
+GET {{base}}/api/admin/tables
+Authorization: Bearer {{adminToken}}
+
+###
+
+### PASO 2: Abrir sesión en mesa 3
+GET {{base}}/api/client/session?table=3
+Content-Type: application/json
+
+> {%
+  client.global.set('sessionToken3', response.body.sessionToken);
+  client.global.set('tableNumber3', 3);
+%}
+
+###
+
+### PASO 3: Crear orden en mesa 3
+POST {{base}}/api/orders/table
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": 3,
+  "items": [
+    {
+      "productId": 2,
+      "quantity": 1,
+      "itemQuantityOverrides": {}
+    }
+  ]
+}
+
+> {%
+  client.global.set('orderId3', response.body.id);
+%}
+
+###
+
+### PASO 4: Cambiar estado a IN_PREPARATION
+PATCH {{base}}/api/orders/{{orderId3}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PREPARATION"
+}
+
+###
+
+### PASO 5: Cambiar estado a SERVED
+PATCH {{base}}/api/orders/{{orderId3}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "SERVED"
+}
+
+###
+
+### PASO 6: Pagar orden (libera mesa)
+PATCH {{base}}/api/orders/{{orderId3}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "PAID"
+}
+
+> {%
+  if (response.status === 200) {
+    console.log('✅ FLUJO COMPLETADO');
+    console.log('- Sesión abierta en mesa 3');
+    console.log('- Orden creada');
+    console.log('- Orden pagada');
+    console.log('- Mesa 3 ahora está AVAILABLE');
+  }
+%}
+
+###
+
+### PASO 7: Verificar estado de mesas después
+GET {{base}}/api/admin/tables
+Authorization: Bearer {{adminToken}}
+
+###############################################
+### 8. CASOS DE ERROR
+###############################################
+
+### ❌ Obtener orden que no existe
+GET {{base}}/api/orders/99999
+Authorization: Bearer {{adminToken}}
+
+###
+
+### ❌ Abrir sesión en mesa que no existe
+GET {{base}}/api/client/session?table=999
+Content-Type: application/json
+
+###
+
+### ❌ Crear orden en mesa sin items
+POST {{base}}/api/orders/table
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": 4,
+  "items": []
+}
+
+###############################################
+### 9. CIERRE MANUAL DE SESIÓN (Camarero)
+###############################################
+
+### Abrir sesión en mesa 5 para luego cerrar
+GET {{base}}/api/client/session?table=5
+Content-Type: application/json
+
+> {%
+  client.global.set('sessionToken5', response.body.sessionToken);
+%}
+
+###
+
+### Cerrar sesión (libera mesa aunque no haya pago)
+DELETE {{base}}/api/staff/tables/5/session
+Authorization: Bearer {{adminToken}}
+
+> {%
+  if (response.status === 200) {
+    console.log('✅ Sesión cerrada manualmente');
+    console.log('Mesa 5 está AVAILABLE nuevamente');
+  }
+%}
+
+###############################################
+### 10. PRUEBA DE CONCURRENCIA
+###############################################
+
+### Dos clientes intenten abrir sesión en misma mesa simultáneamente
+
+### Cliente 1: Abre sesión
+GET {{base}}/api/client/session?table=6
+Content-Type: application/json
+
+> {%
+  if (response.status === 200) {
+    client.global.set('client1Token', response.body.sessionToken);
+    console.log('✅ Cliente 1 abrió sesión en mesa 6');
+  }
+%}
+
+###
+
+### Cliente 2: Intenta abrir sesión en misma mesa (debe fallar)
+GET {{base}}/api/client/session?table=6
+Content-Type: application/json
+
+> {%
+  if (response.status === 409) {
+    console.log('✅ Cliente 2 rechazado correctamente');
+    console.log('Mensaje:', response.body.message);
+  }
+%}
+
+###############################################
+### NOTAS IMPORTANTES
+###############################################
+
+###
+### 1. Estados de Orden:
+###    PENDING → IN_PREPARATION → SERVED → PAID
+###    Cualquiera puede ir a CANCELLED
+###
+### 2. Estados de Mesa:
+###    AVAILABLE ← Puede recibir cliente nuevo
+###    OCCUPIED  ← No puede recibir otro cliente
+###    MAINTENANCE, RESERVED ← Bloqueados
+###
+### 3. Automatización:
+###    - Al abrir sesión: Mesa → OCCUPIED
+###    - Al pagar: Mesa → AVAILABLE
+###    - Al cerrar sesión: Mesa → AVAILABLE
+###
+### 4. Validaciones:
+###    - No se puede abrir sesión en mesa NO AVAILABLE
+###    - Retorna 409 Conflict con mensaje personalizado
+###    - Logs se registran en el servidor
+###
+
+###############################################
+### CASOS DE PRUEBA DOCUMENTADOS
+###############################################
+
+### ✅ DEBE PASAR (200 OK):
+### - Abrir sesión en mesa AVAILABLE
+### - Crear orden en mesa OCCUPIED
+### - Pagar orden de mesa
+### - Cerrar sesión
+### - Obtener órdenes de mesa
+### - Cambiar estado de orden
+
+### ❌ DEBE FALLAR (409 Conflict):
+### - Abrir sesión en mesa OCCUPIED
+### - Abrir sesión en mesa MAINTENANCE
+### - Abrir sesión en mesa RESERVED
+### - Dos clientes en misma mesa
+
+### ❌ DEBE FALLAR (404 Not Found):
+### - Obtener orden inexistente
+### - Obtener mesa inexistente
+
+###############################################
+

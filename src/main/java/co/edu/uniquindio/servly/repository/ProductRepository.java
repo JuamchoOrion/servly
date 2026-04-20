@@ -50,14 +50,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     /**
      * Obtiene productos activos con categorías no eliminadas
      */
-    @Query("SELECT p FROM Product p WHERE p.active = true AND p.deleted = false AND (p.category IS NULL OR p.category.deleted = false)")
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category c WHERE p.active = true AND p.deleted = false AND (c IS NULL OR c.deleted = false)")
     List<Product> findActiveProductsWithActiveCategories();
 
     /**
      * Obtiene productos activos con categorías no eliminadas (paginado)
      */
-    @Query("SELECT p FROM Product p WHERE p.active = true AND p.deleted = false AND (p.category IS NULL OR p.category.deleted = false)")
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category c WHERE p.active = true AND p.deleted = false AND (c IS NULL OR c.deleted = false)")
     Page<Product> findActiveProductsWithActiveCategories(Pageable pageable);
+
+    /**
+     * Obtiene todos los productos (incluyendo inactivos) con categorías no eliminadas (paginado) - Para Admin
+     */
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category c WHERE p.deleted = false AND (c IS NULL OR c.deleted = false)")
+    Page<Product> findAllProductsWithActiveCategories(Pageable pageable);
 }
 
 

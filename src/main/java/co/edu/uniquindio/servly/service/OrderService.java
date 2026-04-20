@@ -186,6 +186,17 @@ public class OrderService {
         Order updated = orderRepository.save(order);
         log.info("Pago confirmado para orden: {} - Estado cambió a PAID", orderId);
 
+        // 🟢 LIBERAR LA MESA: Cambiar estado a AVAILABLE
+        if (order.getSource() != null && order.getSource() instanceof TableSource) {
+            TableSource tableSource = (TableSource) order.getSource();
+            if (tableSource.getRestaurantTable() != null) {
+                RestaurantTable table = tableSource.getRestaurantTable();
+                table.setStatus(RestaurantTable.TableStatus.AVAILABLE);
+                tableRepository.save(table);
+                log.info("🟢 Mesa {} liberada - Estado cambió a AVAILABLE (pago confirmado)", table.getTableNumber());
+            }
+        }
+
         // Notificar al cliente SSE una vez que la transacción se confirme
         OrderDTO result = toDTO(updated);
         emitNotificationAfterCommit(result);
@@ -247,10 +258,16 @@ public class OrderService {
      * Actualiza el estado de una orden
      * PENDING → IN_PREPARATION → SERVED → PAID
      * Cuando cambia a SERVED se descuenta el inventario
+     * Cuando cambia a PAID y es de mesa, se libera la mesa
      */
     public OrderDTO updateOrderStatus(Long orderId, UpdateOrderStatusRequest request) {
+        log.info("=== INICIANDO ACTUALIZACIÓN DE ESTADO DE ORDEN ===");
+        log.info("Orden ID: {}, Nuevo estado solicitado: {}", orderId, request.getStatus());
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Orden no encontrada: " + orderId));
+
+        log.debug("Orden encontrada - Tipo: {}, Estado actual: {}", order.getOrderType(), order.getStatus());
 
         // Validar transición de estado
         validateStatusTransition(order.getStatus(), request.getStatus());
@@ -260,13 +277,40 @@ public class OrderService {
             log.info("Descuentando inventario para orden: {} al cambiar a SERVED", orderId);
             for (Order_detail detail : order.getOrderDetailList()) {
                 availabilityService.deductInventoryForProduct(detail.getProduct(), detail.getQuantity());
+                log.debug("✓ Inventario descontado: {} x{}", detail.getProduct().getName(), detail.getQuantity());
             }
+            log.info("✓ Inventario completamente descontado para orden {}", orderId);
         }
 
+        // Si cambia a PAID y es una orden de mesa, liberar la mesa
+        if (request.getStatus().equals(OrderTableState.PAID) && order.getOrderType().equals(OrderType.TABLE)) {
+            log.info("EVENTO: Orden {} marcada como PAGADA - Procesando liberación de mesa", orderId);
+            if (order.getSource() instanceof TableSource) {
+                TableSource tableSource = (TableSource) order.getSource();
+                RestaurantTable table = tableSource.getRestaurantTable();
+                if (table != null) {
+                    log.info("Mesa {} (ID: {}) - Estado anterior: OCCUPIED → AVAILABLE",
+                             table.getTableNumber(), table.getId());
+                    table.setStatus(RestaurantTable.TableStatus.AVAILABLE);
+                    RestaurantTable savedTable = tableRepository.save(table);
+                    log.info("✓ Mesa {} ahora está {} después del pago de orden {}",
+                             savedTable.getTableNumber(), savedTable.getStatus(), orderId);
+                    log.info("✓ Mesa disponible nuevamente para nuevos clientes");
+                } else {
+                    log.warn("No se encontró RestaurantTable para la orden de mesa {}", orderId);
+                }
+            }
+        } else if (request.getStatus().equals(OrderTableState.PAID)) {
+            log.debug("Orden {} es de tipo {} - No se libera mesa (solo órdenes de mesa se liberan)",
+                     orderId, order.getOrderType());
+        }
+
+        // Actualizar estado
         order.setStatus(request.getStatus());
         Order updated = orderRepository.save(order);
 
-        log.info("Orden {} actualizada a estado: {}", orderId, request.getStatus());
+        log.info("✓ Orden {} actualizada a estado: {}", orderId, request.getStatus());
+        log.info("=== ACTUALIZACIÓN COMPLETADA ===");
 
         // Notificar al cliente SSE una vez que la transacción se confirme
         OrderDTO result = toDTO(updated);

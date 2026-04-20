@@ -131,6 +131,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new MessageResponse(ex.getMessage()));
     }
 
+    @ExceptionHandler(TableOccupiedException.class)
+    public ResponseEntity<MessageResponse> handleTableOccupied(
+            TableOccupiedException ex, HttpServletRequest request) {
+        log.warn("TableOccupiedException en {}: Mesa {}, Estado {}", request.getRequestURI(), ex.getTableNumber(), ex.getStatus());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
     // ── Validaciones ──────────────────────────────────────────────────────────
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
