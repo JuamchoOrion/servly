@@ -1,47 +1,77 @@
-- name: Deploy to Cloud Run
-  id: deploy
-  uses: 'google-github-actions/deploy-cloudrun@v2'
-  with:
-    service: ${{ env.SERVICE_NAME }}
-    region: ${{ env.REGION }}
-    image: ${{ env.IMAGE_URL }}
-    # Parámetros de despliegue
-    allow_unauthenticated: true
-    memory: 512Mi
-    cpu: 1
-    min_instances: 0
-    max_instances: 3
-    timeout: 300
-    port: 8081
-    # Variables de entorno (formato nativo de la acción)
-    env_vars: |
-      SPRING_PROFILES_ACTIVE=production
-      SERVER_PORT=8081
-      SUPABASE_DB_URL=jdbc:postgresql://aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require
-      SUPABASE_DB_USER=postgres.wglrjiiljnzemxrczwmy
-      SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }}
-      JWT_SECRET=${{ secrets.JWT_SECRET }}
-      JWT_EXPIRATION=86400000
-      EMAIL_USERNAME=servly41@gmail.com
-      EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
-      GOOGLE_CLIENT_ID=619549576770-oj20nuhmqcqu6c09qim0v6fj952jm93a.apps.googleusercontent.com
-      GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-      CLOUDINARY_CLOUD_NAME=dvzmidfp6
-      CLOUDINARY_API_KEY=645191511747558
-      CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-      APP_FRONTEND_URL=https://servlyapp.duckdns.org
-      APP_N8N_ENABLED=false
-      APP_ADMIN_EMAIL=servly41@gmail.com
-      APP_ADMIN_PASSWORD=Servly123
-      APP_RECAPTCHA_ENABLED=true
-      APP_RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}
-    # Labels para tracking
-    labels: |
-      managed-by=github-actions
-      commit-sha=${{ github.sha }}
+name: Deploy Backend to Cloud Run
 
-- name: Show deployment URL
-  run: |
-    echo "✅ Backend deployed successfully!"
-    echo "🔗 Service URL: ${{ steps.deploy.outputs.url }}"
-    echo "🔗 Health check: ${{ steps.deploy.outputs.url }}/actuator/health"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: servly-backend
+  REPOSITORY: servly-images
+  IMAGE_NAME: backend
+  WORKLOAD_IDENTITY_POOL: ${{ secrets.GCP_WORKLOAD_IDENTITY_POOL }}
+  SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Cloud Auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_POOL }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          LATEST_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
+          docker build -t "$IMAGE_TAG" -t "$LATEST_TAG" .
+          docker push "$IMAGE_TAG"
+          docker push "$LATEST_TAG"
+          echo "IMAGE_URL=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: 'google-github-actions/deploy-cloudrun@v2.1.0'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE_URL }}
+          allow_unauthenticated: true
+          memory: 512Mi
+          cpu: 1
+          min_instances: 0
+          max_instances: 3
+          timeout: 300
+          port: 8081
+          env_vars: SPRING_PROFILES_ACTIVE=production,SERVER_PORT=8081,SUPABASE_DB_URL=jdbc:postgresql://aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require,SUPABASE_DB_USER=postgres.wglrjiiljnzemxrczwmy,SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }},JWT_SECRET=${{ secrets.JWT_SECRET }},JWT_EXPIRATION=86400000,EMAIL_USERNAME=servly41@gmail.com,EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }},GOOGLE_CLIENT_ID=619549576770-oj20nuhmqcqu6c09qim0v6fj952jm93a.apps.googleusercontent.com,GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }},CLOUDINARY_CLOUD_NAME=dvzmidfp6,CLOUDINARY_API_KEY=645191511747558,CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }},APP_FRONTEND_URL=https://servlyapp.duckdns.org,APP_N8N_ENABLED=false,APP_ADMIN_EMAIL=servly41@gmail.com,APP_ADMIN_PASSWORD=Servly123,APP_RECAPTCHA_ENABLED=true,APP_RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}
+
+      - name: Show URL
+        run: |
+               echo "✅ Deployed: ${{ steps.deploy.outputs.url }}"
