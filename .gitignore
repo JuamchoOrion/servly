@@ -36,7 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 .env
-.env.local
+.env
 
 ### Spring Boot ###
 application.properties

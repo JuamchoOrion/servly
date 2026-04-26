@@ -39,4 +39,15 @@ public class Order_detail {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
+
+    @Column (precision = 10, scale = 2)
+    private String annotations;
+
+    /**
+     * Almacena items opcionales elegidos por el cliente
+     * Formato JSON: {"itemId": 1, "itemName": "Extra queso", "quantity": 2}, ...
+     * Ejemplo: [{"itemId": 5, "itemName": "Queso extra", "quantity": 2}, {"itemId": 6, "itemName": "Salsa especial", "quantity": 1}]
+     */
+    @Column(columnDefinition = "TEXT")
+    private String optionalItems;
 }

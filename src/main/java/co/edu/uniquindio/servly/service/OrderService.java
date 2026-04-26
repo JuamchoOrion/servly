@@ -8,6 +8,7 @@ import co.edu.uniquindio.servly.model.entity.*;
 import co.edu.uniquindio.servly.model.enums.OrderTableState;
 import co.edu.uniquindio.servly.model.enums.OrderType;
 import co.edu.uniquindio.servly.repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +44,7 @@ public class OrderService {
     private final ProductAvailabilityService availabilityService;
     private final OrderNotificationService notificationService;
     private final HelpAlertService helpAlertService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Crea orden de mesa
@@ -77,12 +81,17 @@ public class OrderService {
             // Calcular precio: base + items extras
             BigDecimal unitPrice = calculatePriceWithVariations(product, productRequest.getItemQuantityOverrides());
 
+            // Convertir items opcionales a JSON
+            String optionalItemsJson = convertOptionalItemsToJson(product, productRequest.getItemQuantityOverrides());
+
             Order_detail detail = Order_detail.builder()
                     .quantity(productRequest.getQuantity())
                     .unitPrice(unitPrice)
                     .taxPercent(BigDecimal.valueOf(0.08))
+                    .annotations(productRequest.getAnnotations())
                     .subtotal(unitPrice.multiply(BigDecimal.valueOf(productRequest.getQuantity())))
                     .product(product)
+                    .optionalItems(optionalItemsJson)
                     .build();
 
             details.add(detail);
@@ -128,12 +137,16 @@ public class OrderService {
             // Calcular precio: base + items extras
             BigDecimal unitPrice = calculatePriceWithVariations(product, productRequest.getItemQuantityOverrides());
 
+            // Convertir items opcionales a JSON
+            String optionalItemsJson = convertOptionalItemsToJson(product, productRequest.getItemQuantityOverrides());
+
             Order_detail detail = Order_detail.builder()
                     .quantity(productRequest.getQuantity())
                     .unitPrice(unitPrice)
                     .taxPercent(BigDecimal.valueOf(0.08))
                     .subtotal(unitPrice.multiply(BigDecimal.valueOf(productRequest.getQuantity())))
                     .product(product)
+                    .optionalItems(optionalItemsJson)
                     .build();
 
 
@@ -376,6 +389,8 @@ public class OrderService {
                                 .unitPrice(d.getUnitPrice())
                                 .taxPercent(d.getTaxPercent())
                                 .subtotal(d.getSubtotal())
+                                .annotations(d.getAnnotations())
+                                .optionalItems(d.getOptionalItems())
                                 .build();
                     } catch (org.hibernate.ObjectNotFoundException | jakarta.persistence.EntityNotFoundException ex) {
                         // El producto fue eliminado (soft delete), usar info del detalle
@@ -388,6 +403,8 @@ public class OrderService {
                                 .unitPrice(d.getUnitPrice())
                                 .taxPercent(d.getTaxPercent())
                                 .subtotal(d.getSubtotal())
+                                .annotations(d.getAnnotations())
+                                .optionalItems(d.getOptionalItems())
                                 .build();
                     }
                 })
@@ -460,44 +477,38 @@ public class OrderService {
     /**
      * Valida que haya items suficientes para la receta con variaciones
      */
-    private void validateRecipeWithVariations(Product product, Integer quantity, java.util.Map<Long, Integer> itemQuantityOverrides) {
-        log.debug("Validando receta para producto: {} ({}) con cantidad: {}", product.getId(), product.getName(), quantity);
-
-        // Si no tiene receta, se permite (producto simple sin items)
-        if (product.getRecipe() == null) {
-            log.debug("Producto {} no tiene receta asignada (producto simple)", product.getId());
-            return;
-        }
-
-        if (product.getRecipe().getItemDetailList() == null || product.getRecipe().getItemDetailList().isEmpty()) {
-            log.debug("Receta del producto {} está vacía", product.getId());
-            return;
-        }
+    private void validateRecipeWithVariations(Product product, Integer quantity, Map<Long, Integer> itemQuantityOverrides) {
+        if (product.getRecipe() == null) return;
+        if (product.getRecipe().getItemDetailList() == null || product.getRecipe().getItemDetailList().isEmpty()) return;
 
         for (ItemDetail itemDetail : product.getRecipe().getItemDetailList()) {
             if (itemDetail == null || itemDetail.getItem() == null) {
-                log.error("ItemDetail o Item nulo en receta de producto: {}", product.getId());
                 throw new ValidationException("Receta inválida: item detalles incompletos");
             }
 
             Item item = itemDetail.getItem();
-            // Obtener cantidad elegida o usar la cantidad base
-            Integer selectedQuantity = itemQuantityOverrides != null && itemQuantityOverrides.containsKey(item.getId())
-                    ? itemQuantityOverrides.get(item.getId())
-                    : itemDetail.getQuantity();
+            boolean isOptional = Boolean.TRUE.equals(itemDetail.getIsOptional());
+
+            Integer selectedQuantity;
+
+            if (itemQuantityOverrides != null && itemQuantityOverrides.containsKey(item.getId())) {
+                selectedQuantity = itemQuantityOverrides.get(item.getId());
+                // Si es opcional y el cliente eligió 0, simplemente no se valida ni se descuenta
+                if (selectedQuantity == 0) continue;
+            } else if (isOptional) {
+                // Item opcional no incluido en overrides = el cliente no lo quiere
+                continue;
+            } else {
+                // Item obligatorio sin override = usar cantidad base
+                selectedQuantity = itemDetail.getQuantity();
+            }
 
             Integer requiredQty = selectedQuantity * quantity;
-            log.debug("Validando disponibilidad de item {} ({}) - Requerido: {} (base: {}, qty: {})",
-                    item.getId(), item.getName(), requiredQty, selectedQuantity, quantity);
-
-            // Validar disponibilidad
             if (!availabilityService.isItemAvailable(item.getId(), requiredQty)) {
                 String itemName = item.getName() != null ? item.getName() : "Item " + item.getId();
-                log.warn("Stock insuficiente para item: {} (ID: {}, Requerido: {})", itemName, item.getId(), requiredQty);
                 throw new ValidationException("No hay " + itemName + " suficientes en inventario");
             }
         }
-        log.debug("Validación de receta exitosa para producto: {}", product.getId());
     }
 
     /**
@@ -578,12 +589,16 @@ public class OrderService {
             // Calcular precio: base + items extras
             BigDecimal unitPrice = calculatePriceWithVariations(product, productRequest.getItemQuantityOverrides());
 
+            // Convertir items opcionales a JSON
+            String optionalItemsJson = convertOptionalItemsToJson(product, productRequest.getItemQuantityOverrides());
+
             Order_detail detail = Order_detail.builder()
                     .quantity(productRequest.getQuantity())
                     .unitPrice(unitPrice)
                     .taxPercent(BigDecimal.valueOf(0.08))
                     .subtotal(unitPrice.multiply(BigDecimal.valueOf(productRequest.getQuantity())))
                     .product(product)
+                    .optionalItems(optionalItemsJson)
                     .build();
 
             details.add(detail);
@@ -637,4 +652,59 @@ public class OrderService {
             }
         });
     }
+
+    /**
+     * Convierte los items opcionales elegidos a formato JSON
+     * Busca el nombre del item en la receta del producto
+     *
+     * @param product Producto con su receta
+     * @param itemQuantityOverrides Mapa de itemId a cantidad elegida
+     * @return String JSON con items opcionales: [{"itemId": 5, "itemName": "Queso", "quantity": 2}]
+     */
+    private String convertOptionalItemsToJson(Product product, Map<Long, Integer> itemQuantityOverrides) {
+        if (itemQuantityOverrides == null || itemQuantityOverrides.isEmpty()) {
+            return null;
+        }
+
+        try {
+            List<Map<String, Object>> optionalItemsList = new java.util.ArrayList<>();
+
+            // Si el producto tiene receta, obtener los nombres de los items
+            if (product.getRecipe() != null && product.getRecipe().getItemDetailList() != null) {
+                for (Map.Entry<Long, Integer> entry : itemQuantityOverrides.entrySet()) {
+                    Long itemId = entry.getKey();
+                    Integer quantity = entry.getValue();
+
+                    // No guardar items con cantidad 0 (el cliente los deseleccionó)
+                    if (quantity == null || quantity <= 0) continue;
+
+                    String itemName = product.getRecipe().getItemDetailList().stream()
+                            .filter(id -> id.getItem() != null && id.getItem().getId().equals(itemId))
+                            .map(id -> id.getItem().getName())
+                            .findFirst()
+                            .orElse("Item " + itemId);
+
+                    Map<String, Object> optionalItem = new HashMap<>();
+                    optionalItem.put("itemId", itemId);
+                    optionalItem.put("itemName", itemName);
+                    optionalItem.put("quantity", quantity);
+                    optionalItemsList.add(optionalItem);
+                }
+            }
+
+            // Convertir a JSON
+            if (optionalItemsList.isEmpty()) {
+                return null;
+            }
+
+            String json = objectMapper.writeValueAsString(optionalItemsList);
+            log.debug("Items opcionales convertidos a JSON: {}", json);
+            return json;
+
+        } catch (Exception e) {
+            log.error("Error al convertir items opcionales a JSON", e);
+            return null;
+        }
+    }
 }
+

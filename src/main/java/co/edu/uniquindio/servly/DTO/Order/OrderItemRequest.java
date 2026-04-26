@@ -20,5 +20,7 @@ public class OrderItemRequest {
     @NotNull(message = "Cantidad no puede ser nula")
     @Positive(message = "Cantidad debe ser mayor a 0")
     private Integer quantity;
+
+    private String annotations;
 }
 

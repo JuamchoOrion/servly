@@ -1,0 +1,76 @@
+{
+  "comment": "Ejemplo de respuesta de crear/obtener una orden con items opcionales",
+  "orderResponse": {
+    "id": 45,
+    "tableNumber": 3,
+    "items": [
+      {
+        "id": 201,
+        "item_id": 10,
+        "item_name": "Hamburguesa Clásica",
+        "quantity": 2,
+        "unit_price": 25000,
+        "tax_percent": 8.00,
+        "subtotal": 50000,
+        "annotations": "Sin cebolla en una",
+        "optional_items": "[{\"itemId\":5,\"itemName\":\"Queso extra\",\"quantity\":2},{\"itemId\":8,\"itemName\":\"Bacon\",\"quantity\":1}]"
+      },
+      {
+        "id": 202,
+        "item_id": 12,
+        "item_name": "Pizza Pepperoni",
+        "quantity": 1,
+        "unit_price": 35000,
+        "tax_percent": 8.00,
+        "subtotal": 35000,
+        "annotations": "Orilla rellena",
+        "optional_items": "[{\"itemId\":9,\"itemName\":\"Extra pepperoni\",\"quantity\":3},{\"itemId\":15,\"itemName\":\"Queso de borde\",\"quantity\":1}]"
+      },
+      {
+        "id": 203,
+        "item_id": 15,
+        "item_name": "Ensalada César",
+        "quantity": 1,
+        "unit_price": 18000,
+        "tax_percent": 8.00,
+        "subtotal": 18000,
+        "annotations": null,
+        "optional_items": null
+      }
+    ],
+    "status": "PENDING",
+    "total": 103000,
+    "createdAt": "2026-04-26T14:30:45",
+    "orderType": "TABLE"
+  },
+  "explanation": {
+    "lineItems": [
+      {
+        "item": "Hamburguesa Clásica x2",
+        "extras": [
+          "2x Queso extra",
+          "1x Bacon"
+        ],
+        "notes": "Sin cebolla en una",
+        "subtotal": 50000
+      },
+      {
+        "item": "Pizza Pepperoni x1",
+        "extras": [
+          "3x Extra pepperoni",
+          "1x Queso de borde"
+        ],
+        "notes": "Orilla rellena",
+        "subtotal": 35000
+      },
+      {
+        "item": "Ensalada César x1",
+        "extras": "Ninguno",
+        "notes": null,
+        "subtotal": 18000
+      }
+    ],
+    "total": 103000
+  }
+}
+
